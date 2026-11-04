@@ -1,0 +1,13 @@
+{
+  "name": "agenthub-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/app.css -o ./static/app.css --minify",
+    "watch:css": "tailwindcss -i ./src/app.css -o ./static/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
+  }
+}

@@ -1,0 +1,25 @@
+# Build output
+/bin/
+/dist/
+/agenthub
+/agenthub-server
+
+# Test and coverage artifacts
+coverage.out
+coverage.html
+*.test
+*.out
+
+# Frontend dependencies (lockfiles are committed)
+node_modules/
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

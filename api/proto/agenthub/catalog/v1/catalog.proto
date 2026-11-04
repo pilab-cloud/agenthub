@@ -1,0 +1,197 @@
+syntax = "proto3";
+
+package agenthub.catalog.v1;
+
+import "agenthub/common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// CatalogService serves read-only catalog operations. Public assets are
+// readable anonymously; private spaces require a reader role.
+service CatalogService {
+  rpc SearchAssets(SearchAssetsRequest) returns (SearchAssetsResponse);
+  rpc GetAsset(GetAssetRequest) returns (GetAssetResponse);
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
+  rpc Resolve(ResolveRequest) returns (ResolveResponse);
+  rpc GetBundle(GetBundleRequest) returns (GetBundleResponse);
+  rpc GetInstallGuide(GetInstallGuideRequest) returns (GetInstallGuideResponse);
+  rpc WatchCatalog(WatchCatalogRequest) returns (stream WatchCatalogResponse);
+}
+
+message SearchAssetsRequest {
+  string query = 1;
+  repeated agenthub.common.v1.AssetKind kinds = 2;
+  repeated string namespaces = 3;
+  repeated string tags = 4;
+  string compatibility_opencode = 5;
+  bool verified_only = 6;
+  agenthub.common.v1.PageRequest page = 7;
+}
+
+message SearchAssetsResponse {
+  repeated AssetSummary assets = 1;
+  agenthub.common.v1.PageResponse page = 2;
+  map<string, uint32> facets = 3;
+}
+
+// AssetSummary is the card shown in search results and the landing grid.
+message AssetSummary {
+  agenthub.common.v1.AssetRef ref = 1;
+  string display_name = 2;
+  string summary = 3;
+  string icon_url = 4;
+  repeated string tags = 5;
+  string latest_version = 6;
+  bool verified = 7;
+  string risk_class = 8;
+  uint64 downloads = 9;
+}
+
+message GetAssetRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+}
+
+message GetAssetResponse {
+  AssetSummary asset = 1;
+  repeated string categories = 2;
+  string license = 3;
+  string repository = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message ListVersionsRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+  agenthub.common.v1.PageRequest page = 2;
+}
+
+message ListVersionsResponse {
+  repeated VersionSummary versions = 1;
+  agenthub.common.v1.PageResponse page = 2;
+}
+
+// VersionSummary is one immutable release of an asset.
+message VersionSummary {
+  agenthub.common.v1.AssetRef ref = 1;
+  agenthub.common.v1.VersionStatus status = 2;
+  agenthub.common.v1.Digest manifest_digest = 3;
+  agenthub.common.v1.Digest bundle_digest = 4;
+  uint64 bundle_size = 5;
+  google.protobuf.Timestamp published_at = 6;
+  bool verified = 7;
+}
+
+message GetVersionRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+}
+
+// GetVersionResponse returns the version with its full manifest.
+message GetVersionResponse {
+  VersionSummary version = 1;
+  bytes manifest = 2;
+  string readme = 3;
+  string changelog = 4;
+}
+
+// DesiredAsset is one entry of the CLI's desired state.
+message DesiredAsset {
+  agenthub.common.v1.AssetRef ref = 1;
+}
+
+// LockedAsset is a compatible pin from an existing lockfile.
+message LockedAsset {
+  agenthub.common.v1.AssetRef ref = 1;
+  string origin_hub = 2;
+  agenthub.common.v1.Digest manifest_digest = 3;
+  agenthub.common.v1.Digest bundle_digest = 4;
+}
+
+message ResolveRequest {
+  repeated DesiredAsset desired = 1;
+  repeated string registry_urls = 2;
+  repeated LockedAsset lock = 3;
+  agenthub.common.v1.Compatibility compatibility = 4;
+  bool include_prerelease = 5;
+  bool update = 6;
+}
+
+message ResolveResponse {
+  repeated ResolvedAsset assets = 1;
+  repeated ResolutionWarning warnings = 2;
+}
+
+// ResolvedAsset is an exact, pinned resolution ready for the lockfile.
+message ResolvedAsset {
+  agenthub.common.v1.AssetRef ref = 1;
+  string origin_hub = 2;
+  agenthub.common.v1.Digest manifest_digest = 3;
+  agenthub.common.v1.Digest bundle_digest = 4;
+  repeated ResolvedDependency dependencies = 5;
+  agenthub.common.v1.Signature signature = 6;
+  string requested_by = 7;
+}
+
+message ResolvedDependency {
+  agenthub.common.v1.AssetRef ref = 1;
+  string constraint = 2;
+  string origin_hub = 3;
+}
+
+message ResolutionWarning {
+  string code = 1;
+  string message = 2;
+  agenthub.common.v1.AssetRef ref = 3;
+}
+
+message GetBundleRequest {
+  oneof selector {
+    agenthub.common.v1.Digest manifest_digest = 1;
+    agenthub.common.v1.AssetRef ref = 2;
+  }
+}
+
+// GetBundleResponse returns the manifest plus pre-signed blob URLs.
+message GetBundleResponse {
+  bytes manifest = 1;
+  agenthub.common.v1.Digest manifest_digest = 2;
+  agenthub.common.v1.Digest bundle_digest = 3;
+  repeated BlobLocation files = 4;
+}
+
+// BlobLocation is one content-addressed blob with a pre-signed URL.
+message BlobLocation {
+  string path = 1;
+  agenthub.common.v1.Digest digest = 2;
+  string url = 3;
+  uint64 size = 4;
+  google.protobuf.Timestamp expires_at = 5;
+}
+
+message GetInstallGuideRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+  string harness = 2;
+  string scope = 3;
+}
+
+message GetInstallGuideResponse {
+  string markdown = 1;
+}
+
+message WatchCatalogRequest {
+  repeated string namespaces = 1;
+  repeated agenthub.common.v1.AssetKind kinds = 2;
+  string cursor = 3;
+}
+
+message WatchCatalogResponse {
+  CatalogEvent event = 1;
+}
+
+// CatalogEvent is one change to a watched slice of the catalog.
+message CatalogEvent {
+  string type = 1;
+  agenthub.common.v1.AssetRef ref = 2;
+  string origin_hub = 3;
+  agenthub.common.v1.Digest manifest_digest = 4;
+  google.protobuf.Timestamp at = 5;
+}

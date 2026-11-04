@@ -1,0 +1,46 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosec
+    - revive
+    - errorlint
+    - gocritic
+    - forbidigo
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print(f|ln)?$
+          msg: use zerolog for logging; CLI output goes through cobra's cmd.Print*
+        - pattern: ^log\.(Print|Fatal|Panic)(f|ln)?$
+          msg: use zerolog, not the std logger
+    revive:
+      rules:
+        - name: package-comments
+  exclusions:
+    paths:
+      - gen
+      - testdata
+      - node_modules
+    rules:
+      - path: _test\.go
+        linters: [gosec, forbidigo]
+      - path: ^cmd/
+        linters: [forbidigo]
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - go.pilab.hu/agenthub

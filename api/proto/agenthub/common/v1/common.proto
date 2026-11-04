@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package agenthub.common.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// AssetKind is the kind of an asset: agent, skill, tool, prompt, or pack.
+enum AssetKind {
+  ASSET_KIND_UNSPECIFIED = 0;
+  ASSET_KIND_AGENT = 1;
+  ASSET_KIND_SKILL = 2;
+  ASSET_KIND_TOOL = 3;
+  ASSET_KIND_PROMPT = 4;
+  ASSET_KIND_PACK = 5;
+}
+
+// VersionStatus is the lifecycle state of one immutable version.
+enum VersionStatus {
+  VERSION_STATUS_UNSPECIFIED = 0;
+  VERSION_STATUS_DRAFT = 1;
+  VERSION_STATUS_PUBLISHED = 2;
+  VERSION_STATUS_DEPRECATED = 3;
+  VERSION_STATUS_YANKED = 4;
+}
+
+// NamespaceVisibility controls who can see a namespace and its assets.
+enum NamespaceVisibility {
+  NAMESPACE_VISIBILITY_UNSPECIFIED = 0;
+  NAMESPACE_VISIBILITY_PUBLIC = 1;
+  NAMESPACE_VISIBILITY_UNLISTED = 2;
+  NAMESPACE_VISIBILITY_PRIVATE = 3;
+}
+
+// AssetRef identifies an asset, optionally pinned to a version. For shorthand
+// resolution hub may be empty; the resolved lockfile always pins it.
+message AssetRef {
+  string hub = 1;
+  string namespace = 2;
+  AssetKind kind = 3;
+  string name = 4;
+  string version = 5;
+}
+
+// Digest is a content digest: algorithm ("sha256") plus lowercase hex value.
+message Digest {
+  string algorithm = 1;
+  string value = 2;
+}
+
+// PageRequest is an opaque cursor page request. The server caps limit at 100.
+message PageRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+}
+
+// PageResponse carries the cursor of the next page, empty when exhausted.
+message PageResponse {
+  string next_cursor = 1;
+}
+
+// PermissionRule is one entry of an asset's permission manifest. The first
+// rule of every manifest is always an explicit deny-all.
+message PermissionRule {
+  string action = 1;
+  string resource = 2;
+  string effect = 3;
+}
+
+// Compatibility declares where an asset can be installed.
+message Compatibility {
+  repeated string harnesses = 1;
+  string opencode = 2;
+  repeated string platforms = 3;
+  repeated string arch = 4;
+}
+
+// Signature is a publisher signature over the canonical manifest bytes.
+message Signature {
+  string key_id = 1;
+  string algorithm = 2;
+  bytes value = 3;
+  google.protobuf.Timestamp signed_at = 4;
+}
+
+// FileDescriptor describes one file inside a bundle.
+message FileDescriptor {
+  string path = 1;
+  string media_type = 2;
+  uint64 size = 3;
+  string sha256 = 4;
+  uint32 mode = 5;
+  bool executable = 6;
+}
+
+// Namespace is a publishing tenant inside a hub.
+message Namespace {
+  string slug = 1;
+  string display_name = 2;
+  string description = 3;
+  NamespaceVisibility visibility = 4;
+  google.protobuf.Timestamp created_at = 5;
+}

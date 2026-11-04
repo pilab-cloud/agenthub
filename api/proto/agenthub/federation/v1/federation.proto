@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package agenthub.federation.v1;
+
+import "agenthub/common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// FederationService serves server-to-server and admin operations: hub
+// identity, signed catalog sync, and upstream management.
+service FederationService {
+  rpc GetHubInfo(GetHubInfoRequest) returns (GetHubInfoResponse);
+  rpc GetSnapshot(GetSnapshotRequest) returns (GetSnapshotResponse);
+  rpc SyncChanges(SyncChangesRequest) returns (SyncChangesResponse);
+  rpc ListUpstreams(ListUpstreamsRequest) returns (ListUpstreamsResponse);
+  rpc UpsertUpstream(UpsertUpstreamRequest) returns (UpsertUpstreamResponse);
+  rpc DeleteUpstream(DeleteUpstreamRequest) returns (DeleteUpstreamResponse);
+  rpc TriggerSync(TriggerSyncRequest) returns (TriggerSyncResponse);
+  rpc ExportBundle(ExportBundleRequest) returns (stream ExportBundleResponse);
+  rpc ImportBundle(stream ImportBundleRequest) returns (ImportBundleResponse);
+}
+
+message GetHubInfoRequest {}
+
+message GetHubInfoResponse {
+  HubInfo hub = 1;
+}
+
+// HubInfo is this hub's identity; also served as
+// /.well-known/agenthub.json for non-RPC clients.
+message HubInfo {
+  string id = 1;
+  string base_url = 2;
+  bytes public_key = 3;
+  uint32 protocol = 4;
+  string signing_algorithm = 5;
+}
+
+message GetSnapshotRequest {
+  repeated string namespaces = 1;
+}
+
+// GetSnapshotResponse is a signed descriptor of one catalog generation.
+message GetSnapshotResponse {
+  uint64 generation = 1;
+  uint32 pages = 2;
+  uint64 entry_count = 3;
+  uint64 tombstone_count = 4;
+  agenthub.common.v1.Digest root_digest = 5;
+  agenthub.common.v1.Signature signature = 6;
+}
+
+message SyncChangesRequest {
+  string cursor = 1;
+  uint32 limit = 2;
+  repeated string namespaces = 3;
+  bool include_yanked = 4;
+}
+
+// SyncChangesResponse is one signed page of catalog changes since cursor.
+message SyncChangesResponse {
+  uint64 generation = 1;
+  uint32 page = 2;
+  agenthub.common.v1.Digest prev_digest = 3;
+  string next_cursor = 4;
+  repeated CatalogEntry entries = 5;
+  repeated Tombstone tombstones = 6;
+  agenthub.common.v1.Digest page_digest = 7;
+  agenthub.common.v1.Signature signature = 8;
+}
+
+// CatalogEntry is one version as seen by a federation peer.
+message CatalogEntry {
+  string id = 1;
+  agenthub.common.v1.AssetKind kind = 2;
+  string namespace = 3;
+  string name = 4;
+  string version = 5;
+  string origin_hub = 6;
+  string origin_version_id = 7;
+  agenthub.common.v1.Digest manifest_digest = 8;
+  agenthub.common.v1.Digest bundle_digest = 9;
+  google.protobuf.Timestamp published_at = 10;
+  string status = 11;
+  string publisher_key_id = 12;
+  string risk_class = 13;
+  uint64 size = 14;
+  repeated string tags = 15;
+}
+
+// Tombstone records a yank or delete that peers must apply.
+message Tombstone {
+  string id = 1;
+  string version = 2;
+  string reason = 3;
+  google.protobuf.Timestamp at = 4;
+}
+
+message ListUpstreamsRequest {}
+
+message ListUpstreamsResponse {
+  repeated Upstream upstreams = 1;
+}
+
+// Upstream is a federated peer hub and its sync state.
+message Upstream {
+  string id = 1;
+  string remote_hub_id = 2;
+  string base_url = 3;
+  string mode = 4;
+  string status = 5;
+  string sync_cursor = 6;
+  google.protobuf.Timestamp last_sync_at = 7;
+}
+
+message UpsertUpstreamRequest {
+  Upstream upstream = 1;
+}
+
+message UpsertUpstreamResponse {
+  Upstream upstream = 1;
+}
+
+message DeleteUpstreamRequest {
+  string id = 1;
+}
+
+message DeleteUpstreamResponse {}
+
+message TriggerSyncRequest {
+  string upstream_id = 1;
+}
+
+message TriggerSyncResponse {
+  string run_id = 1;
+  google.protobuf.Timestamp started_at = 2;
+}
+
+message ExportBundleRequest {
+  agenthub.common.v1.Digest bundle_digest = 1;
+}
+
+message ExportBundleResponse {
+  bytes data = 1;
+}
+
+message ImportBundleRequest {
+  bytes data = 1;
+}
+
+message ImportBundleResponse {
+  agenthub.common.v1.Digest bundle_digest = 1;
+  uint64 bytes_written = 2;
+}

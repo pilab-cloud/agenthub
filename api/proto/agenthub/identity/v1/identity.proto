@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package agenthub.identity.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// IdentityService is the minimal identity surface. Authentication itself
+// lives in Shadow SSO; there is no login, password, MFA, or user CRUD RPC.
+service IdentityService {
+  rpc WhoAmI(WhoAmIRequest) returns (WhoAmIResponse);
+  rpc ListMyNamespaces(ListMyNamespacesRequest) returns (ListMyNamespacesResponse);
+  rpc GetTokenInfo(GetTokenInfoRequest) returns (GetTokenInfoResponse);
+}
+
+message WhoAmIRequest {}
+
+message WhoAmIResponse {
+  string subject = 1;
+  string email = 2;
+  string name = 3;
+  repeated string scopes = 4;
+  repeated string roles = 5;
+  repeated string groups = 6;
+}
+
+message ListMyNamespacesRequest {}
+
+message ListMyNamespacesResponse {
+  repeated NamespaceRole namespaces = 1;
+}
+
+// NamespaceRole is one namespace role of the caller, e.g.
+// agenthub:pilab:publisher maps to namespace "pilab", role "publisher".
+message NamespaceRole {
+  string namespace = 1;
+  string role = 2;
+}
+
+message GetTokenInfoRequest {}
+
+// GetTokenInfo describes the caller's token without returning its value.
+message GetTokenInfoResponse {
+  string client_id = 1;
+  repeated string scopes = 2;
+  google.protobuf.Timestamp expires_at = 3;
+  string token_type = 4;
+}

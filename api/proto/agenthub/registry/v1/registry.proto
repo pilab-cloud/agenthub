@@ -1,0 +1,255 @@
+syntax = "proto3";
+
+package agenthub.registry.v1;
+
+import "agenthub/catalog/v1/catalog.proto";
+import "agenthub/common/v1/common.proto";
+import "google/protobuf/timestamp.proto";
+
+// RegistryService serves write operations. Every RPC requires
+// agenthub.publish (or agenthub.admin) plus a namespace role.
+service RegistryService {
+  rpc CreateNamespace(CreateNamespaceRequest) returns (CreateNamespaceResponse);
+  rpc GetNamespace(GetNamespaceRequest) returns (GetNamespaceResponse);
+  rpc ListNamespaces(ListNamespacesRequest) returns (ListNamespacesResponse);
+  rpc BeginPublish(BeginPublishRequest) returns (BeginPublishResponse);
+  rpc CommitPublish(CommitPublishRequest) returns (CommitPublishResponse);
+  rpc CreateDraft(CreateDraftRequest) returns (CreateDraftResponse);
+  rpc UpdateDraft(UpdateDraftRequest) returns (UpdateDraftResponse);
+  rpc DiscardDraft(DiscardDraftRequest) returns (DiscardDraftResponse);
+  rpc DeleteDraft(DeleteDraftRequest) returns (DeleteDraftResponse);
+  rpc PublishDraft(PublishDraftRequest) returns (PublishDraftResponse);
+  rpc SetLandingVisibility(SetLandingVisibilityRequest) returns (SetLandingVisibilityResponse);
+  rpc ValidateBundle(ValidateBundleRequest) returns (ValidateBundleResponse);
+  rpc YankVersion(YankVersionRequest) returns (YankVersionResponse);
+  rpc UnyankVersion(UnyankVersionRequest) returns (UnyankVersionResponse);
+  rpc DeprecateVersion(DeprecateVersionRequest) returns (DeprecateVersionResponse);
+  rpc RegisterSigningKey(RegisterSigningKeyRequest) returns (RegisterSigningKeyResponse);
+  rpc RevokeSigningKey(RevokeSigningKeyRequest) returns (RevokeSigningKeyResponse);
+  rpc ListAudit(ListAuditRequest) returns (ListAuditResponse);
+}
+
+message CreateNamespaceRequest {
+  string slug = 1;
+  string display_name = 2;
+  string description = 3;
+  agenthub.common.v1.NamespaceVisibility visibility = 4;
+}
+
+message CreateNamespaceResponse {
+  agenthub.common.v1.Namespace namespace = 1;
+}
+
+message GetNamespaceRequest {
+  string slug = 1;
+}
+
+message GetNamespaceResponse {
+  agenthub.common.v1.Namespace namespace = 1;
+  string caller_role = 2;
+}
+
+message ListNamespacesRequest {
+  agenthub.common.v1.PageRequest page = 1;
+}
+
+message ListNamespacesResponse {
+  repeated NamespaceWithRole namespaces = 1;
+  agenthub.common.v1.PageResponse page = 2;
+}
+
+// NamespaceWithRole is a namespace plus the caller's role in it.
+message NamespaceWithRole {
+  agenthub.common.v1.Namespace namespace = 1;
+  string caller_role = 2;
+  uint64 asset_count = 3;
+}
+
+// BeginPublish reserves (asset, version) and returns pre-signed upload
+// URLs for the content-addressed blobs.
+message BeginPublishRequest {
+  string namespace = 1;
+  agenthub.common.v1.AssetKind kind = 2;
+  string name = 3;
+  string version = 4;
+  agenthub.common.v1.Digest bundle_digest = 5;
+  repeated agenthub.common.v1.FileDescriptor files = 6;
+  string idempotency_key = 7;
+}
+
+message BeginPublishResponse {
+  string publish_id = 1;
+  repeated UploadTarget uploads = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// UploadTarget is a pre-signed PUT URL for one blob path.
+message UploadTarget {
+  string path = 1;
+  string url = 2;
+  map<string, string> headers = 3;
+}
+
+// CommitPublish finalizes the version: manifest plus signature. It is
+// idempotent by (asset, version, manifestDigest).
+message CommitPublishRequest {
+  string publish_id = 1;
+  bytes manifest = 2;
+  agenthub.common.v1.Digest manifest_digest = 3;
+  agenthub.common.v1.Signature signature = 4;
+  string readme = 5;
+  string changelog = 6;
+}
+
+message CommitPublishResponse {
+  agenthub.catalog.v1.ResolvedAsset asset = 1;
+}
+
+message CreateDraftRequest {
+  string namespace = 1;
+  agenthub.common.v1.AssetKind kind = 2;
+  string name = 3;
+  bytes manifest = 4;
+  repeated DraftFile files = 5;
+}
+
+message CreateDraftResponse {
+  string draft_id = 1;
+}
+
+// DraftFile is a file of a web draft: inline content or a blob digest.
+message DraftFile {
+  string path = 1;
+  bytes content = 2;
+}
+
+message UpdateDraftRequest {
+  string draft_id = 1;
+  bytes manifest = 2;
+  repeated DraftFile files = 3;
+}
+
+message UpdateDraftResponse {}
+
+message DiscardDraftRequest {
+  string draft_id = 1;
+}
+
+message DiscardDraftResponse {}
+
+message DeleteDraftRequest {
+  string draft_id = 1;
+}
+
+message DeleteDraftResponse {}
+
+message PublishDraftRequest {
+  string draft_id = 1;
+  string version = 2;
+  bool use_hosted_key = 3;
+}
+
+message PublishDraftResponse {
+  agenthub.catalog.v1.ResolvedAsset asset = 1;
+}
+
+message SetLandingVisibilityRequest {
+  string asset_id = 1;
+  bool visible = 2;
+}
+
+message SetLandingVisibilityResponse {}
+
+message ValidateBundleRequest {
+  string namespace = 1;
+  bytes manifest = 2;
+  repeated agenthub.common.v1.FileDescriptor files = 3;
+}
+
+message ValidateBundleResponse {
+  bool valid = 1;
+  repeated ValidationIssue issues = 2;
+}
+
+message ValidationIssue {
+  string field = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message YankVersionRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+  string reason = 2;
+}
+
+message YankVersionResponse {}
+
+message UnyankVersionRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+}
+
+message UnyankVersionResponse {}
+
+message DeprecateVersionRequest {
+  agenthub.common.v1.AssetRef ref = 1;
+  string note = 2;
+}
+
+message DeprecateVersionResponse {}
+
+message RegisterSigningKeyRequest {
+  string namespace = 1;
+  string kid = 2;
+  string algorithm = 3;
+  string custody = 4;
+  string public_key = 5;
+  string kms_key_ref = 6;
+  google.protobuf.Timestamp valid_from = 7;
+}
+
+message RegisterSigningKeyResponse {
+  SigningKey key = 1;
+}
+
+// SigningKey is a registered namespace signing key; private key material
+// never leaves the publisher (or OpenBao/KMS for hosted custody).
+message SigningKey {
+  string namespace = 1;
+  string kid = 2;
+  string algorithm = 3;
+  string custody = 4;
+  string public_key = 5;
+  string kms_key_ref = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp valid_from = 8;
+  google.protobuf.Timestamp revoked_at = 9;
+}
+
+message RevokeSigningKeyRequest {
+  string namespace = 1;
+  string kid = 2;
+}
+
+message RevokeSigningKeyResponse {}
+
+message ListAuditRequest {
+  string namespace = 1;
+  agenthub.common.v1.PageRequest page = 2;
+}
+
+message ListAuditResponse {
+  repeated AuditEvent events = 1;
+  agenthub.common.v1.PageResponse page = 2;
+}
+
+// AuditEvent is one immutable audit-log entry.
+message AuditEvent {
+  google.protobuf.Timestamp at = 1;
+  string actor_sub = 2;
+  string actor_email = 3;
+  string action = 4;
+  string asset = 5;
+  string version = 6;
+  string detail_json = 7;
+  string ip = 8;
+}
