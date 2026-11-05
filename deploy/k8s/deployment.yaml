@@ -75,7 +75,7 @@ spec:
         - name: server
           # Built from deploy/docker/Dockerfile; replace the tag with the
           # published digest when promoting a release.
-          image: ghcr.io/pilab-dev/agenthub-server:20261105-r2
+          image: ghcr.io/pilab-dev/agenthub-server:20261105-r3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
