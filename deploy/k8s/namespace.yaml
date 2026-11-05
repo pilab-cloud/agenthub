@@ -1,0 +1,8 @@
+# M3.8 — AgentHub namespace.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agenthub
+  labels:
+    app.kubernetes.io/name: agenthub
+    app.kubernetes.io/part-of: agenthub

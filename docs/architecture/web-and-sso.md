@@ -200,6 +200,7 @@ auth:
   audience_allowlist: ["agenthub"]       # client_id is always accepted too
   client_id: "${SSO_CLIENT_ID}"          # from OpenBao
   client_secret: "${SSO_CLIENT_SECRET}"  # from OpenBao
+  session_secret: "${AGENTHUB_SESSION_SECRET}" # BFF cookie HMAC, >= 32 chars
   redirect_url: "https://agenthub.pilab.hu/auth/callback"
   post_logout_redirect_url: "https://agenthub.pilab.hu/"
   scopes: ["openid", "profile", "email", "agenthub.read", "agenthub.publish", "agenthub.admin"]
@@ -242,7 +243,7 @@ so treat the value as opaque.
 
 | Client | Type | Grants | Token auth | Redirect / audience | Used by |
 | --- | --- | --- | --- | --- | --- |
-| `agenthub-web` | confidential | `authorization_code`, `refresh_token` | `client_secret_basic` | `https://agenthub.pilab.hu/auth/callback` | Browser frontend + backend BFF |
+| `agenthub-web` | confidential | `authorization_code`, `refresh_token` | `client_secret_post` | `https://agenthub.pilab.hu/auth/callback` | Browser frontend + backend BFF |
 | `agenthub-cli` | public | device code, `refresh_token` | `none` | device flow | `agenthub login` |
 | `agenthub-ci` | confidential service account | `client_credentials` | `private_key_jwt` | `aud=agenthub` | CI publishing |
 | `agenthub-federation` | confidential service account | `client_credentials` | `private_key_jwt` | `aud=<peer-hub>` | Hub-to-hub sync |
@@ -266,7 +267,7 @@ ssoctl client register \
   --post-logout-redirect-uris "https://agenthub.pilab.hu/" \
   --scopes "openid,profile,email,agenthub.read,agenthub.publish,agenthub.admin" \
   --grant-types "authorization_code,refresh_token" \
-  --token-endpoint-auth-method client_secret_basic \
+  --token-endpoint-auth-method client_secret_post \
   --require-consent true
 ```
 
@@ -868,7 +869,7 @@ Additional rules:
 
 - Login redirect contains `state`, `nonce`, `code_challenge`, `S256`.
 - Callback rejects a mismatched state, nonce, or missing verifier.
-- Code exchange uses `client_secret_basic` and the exact redirect URI.
+- Code exchange uses `client_secret_post` and the exact redirect URI.
 - ID token validation rejects wrong `iss`, `aud`, `nonce`, expired token, and
   `alg=none`.
 - Session cookie is `HttpOnly`, `Secure`, `SameSite=Lax`.

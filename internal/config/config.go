@@ -47,7 +47,10 @@ type ServerConfig struct {
 	IdleTimeout     time.Duration `mapstructure:"idle_timeout"`
 	ShutdownGrace   time.Duration `mapstructure:"shutdown_grace"`
 	MaxRequestBytes int64         `mapstructure:"max_request_bytes"`
-	TrustedProxies  []string      `mapstructure:"trusted_proxies"`
+	// RateLimitPerSec is the per-IP token bucket refill rate (burst equals the
+	// rate). Zero or negative disables the limiter.
+	RateLimitPerSec int      `mapstructure:"rate_limit_per_sec"`
+	TrustedProxies  []string `mapstructure:"trusted_proxies"`
 }
 
 type DatabaseConfig struct {
@@ -59,6 +62,9 @@ type DatabaseConfig struct {
 	MigrateOnStart   bool          `mapstructure:"migrate_on_start"`
 }
 
+// StorageConfig selects the object store. The keys are validated, but the
+// server does not construct an S3 backend yet: federation bundle blobs use an
+// in-memory store. The fields are reserved for that backend.
 type StorageConfig struct {
 	Kind                 string        `mapstructure:"kind"`
 	Endpoint             string        `mapstructure:"endpoint"`
@@ -73,6 +79,8 @@ type StorageConfig struct {
 	MaxFileBytes         int64         `mapstructure:"max_file_bytes"`
 }
 
+// CacheConfig selects the shared cache. The keys are validated, but no server
+// component consumes them yet; the fields are reserved for the Valkey backend.
 type CacheConfig struct {
 	Kind        string        `mapstructure:"kind"`
 	Addr        string        `mapstructure:"addr"`
@@ -84,14 +92,19 @@ type CacheConfig struct {
 }
 
 type AuthConfig struct {
-	Issuer                        string        `mapstructure:"issuer"`
-	DiscoveryURL                  string        `mapstructure:"discovery_url"`
-	Audience                      string        `mapstructure:"audience"`
-	AudienceAllowlist             []string      `mapstructure:"audience_allowlist"`
-	JWKSURL                       string        `mapstructure:"jwks_url"`
-	IntrospectionURL              string        `mapstructure:"introspection_url"`
-	ClientID                      string        `mapstructure:"client_id"`
-	ClientSecret                  string        `mapstructure:"client_secret"`
+	Issuer            string   `mapstructure:"issuer"`
+	DiscoveryURL      string   `mapstructure:"discovery_url"`
+	Audience          string   `mapstructure:"audience"`
+	AudienceAllowlist []string `mapstructure:"audience_allowlist"`
+	JWKSURL           string   `mapstructure:"jwks_url"`
+	IntrospectionURL  string   `mapstructure:"introspection_url"`
+	ClientID          string   `mapstructure:"client_id"`
+	ClientSecret      string   `mapstructure:"client_secret"`
+	// SessionSecret keys the HMAC that signs the OIDC BFF login and
+	// session cookies (M3.5). Required whenever the browser client
+	// (client_id) is configured and must stay stable across restarts,
+	// otherwise every session is dropped when the process restarts.
+	SessionSecret                 string        `mapstructure:"session_secret"`
 	RedirectURL                   string        `mapstructure:"redirect_url"`
 	PostLogoutRedirectURL         string        `mapstructure:"post_logout_redirect_url"`
 	Scopes                        []string      `mapstructure:"scopes"`
@@ -169,6 +182,10 @@ func NewViper(path string) (*viper.Viper, error) {
 	v.AutomaticEnv()
 
 	applyDefaults(v)
+	// Viper only consults AutomaticEnv during Unmarshal for keys it knows
+	// about. Keys without a default (database.dsn, auth.client_id, ...)
+	// would otherwise ignore AGENTHUB_* overrides, so bind every known key.
+	bindEnvKeys(v)
 
 	if path != "" {
 		v.SetConfigFile(path)
@@ -177,6 +194,38 @@ func NewViper(path string) (*viper.Viper, error) {
 		}
 	}
 	return v, nil
+}
+
+// bindEnvKeys registers every mapstructure key with Viper. AutomaticEnv alone
+// is not enough for Unmarshal: Viper only looks up environment variables for
+// keys it already knows, and keys without a default would be invisible.
+func bindEnvKeys(v *viper.Viper) {
+	bindStructEnv(v, "", reflect.TypeOf(Config{}))
+}
+
+func bindStructEnv(v *viper.Viper, prefix string, t reflect.Type) {
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		tag := strings.Split(f.Tag.Get("mapstructure"), ",")[0]
+		if tag == "" || tag == "-" {
+			continue
+		}
+		key := tag
+		if prefix != "" {
+			key = prefix + "." + tag
+		}
+		ft := f.Type
+		if ft.Kind() == reflect.Pointer {
+			ft = ft.Elem()
+		}
+		// time.Duration is an int64; everything else that is a struct
+		// (including the anonymous hosted_custody block) is a section.
+		if ft.Kind() == reflect.Struct && ft != reflect.TypeOf(time.Duration(0)) {
+			bindStructEnv(v, key, ft)
+			continue
+		}
+		_ = v.BindEnv(key)
+	}
 }
 
 func applyDefaults(v *viper.Viper) {
@@ -191,6 +240,7 @@ func applyDefaults(v *viper.Viper) {
 	v.SetDefault("server.idle_timeout", "120s")
 	v.SetDefault("server.shutdown_grace", "20s")
 	v.SetDefault("server.max_request_bytes", 4194304)
+	v.SetDefault("server.rate_limit_per_sec", 100)
 	v.SetDefault("server.trusted_proxies", []string{"10.0.0.0/8"})
 	// database
 	v.SetDefault("database.max_open_conns", 20)
@@ -350,6 +400,11 @@ func walkExpand(v reflect.Value) {
 	}
 }
 
+// minSessionSecretLen is the shortest accepted auth.session_secret: the
+// cookie HMAC key is the only thing standing between a stolen cookie and a
+// forged session.
+const minSessionSecretLen = 32
+
 // Validate implements the fail-fast rules from operations.md §2.2.
 func (c *Config) Validate() error {
 	var errs []string
@@ -391,6 +446,47 @@ func (c *Config) Validate() error {
 	if c.Auth.RedirectURL != "" && c.Server.PublicURL != "" {
 		if originOf(c.Auth.RedirectURL) != originOf(c.Server.PublicURL) {
 			add("auth.redirect_url origin must match server.public_url")
+		}
+	}
+	if c.Auth.ClientID != "" {
+		// OIDC BFF (M3.5): /auth/login, /auth/callback and /auth/logout
+		// discover their endpoints from the issuer, sign their cookies
+		// with auth.session_secret and need a redirect URI to come back
+		// to. All three are derived from these keys alone.
+		if c.Auth.Issuer == "" {
+			add("auth.issuer is required when auth.client_id is set")
+		}
+		if c.Auth.SessionSecret == "" {
+			add("auth.session_secret is required when auth.client_id is set")
+		}
+		if c.Auth.RedirectURL == "" && c.Server.PublicURL == "" {
+			add("auth.redirect_url (or server.public_url) is required when auth.client_id is set")
+		}
+	}
+	if c.Auth.SessionSecret != "" && len(c.Auth.SessionSecret) < minSessionSecretLen {
+		add(fmt.Sprintf("auth.session_secret must be at least %d characters", minSessionSecretLen))
+	}
+	if c.Auth.Issuer != "" {
+		// Shadow SSO mode (M3.3): server.New builds an sso.Verifier from
+		// these fields and refuses to start on the same problems.
+		if s := parseURL(c.Auth.Issuer); s != "http" && s != "https" {
+			add("auth.issuer must be an absolute http(s) URL")
+		}
+		if c.Auth.Audience == "" && len(c.Auth.AudienceAllowlist) == 0 {
+			add("auth.audience (or auth.audience_allowlist) is required when auth.issuer is set")
+		}
+		if c.Auth.JWKSURL != "" {
+			if s := parseURL(c.Auth.JWKSURL); s != "http" && s != "https" {
+				add("auth.jwks_url must be an absolute http(s) URL")
+			}
+		}
+		if c.Auth.DiscoveryURL != "" {
+			if s := parseURL(c.Auth.DiscoveryURL); s != "http" && s != "https" {
+				add("auth.discovery_url must be an absolute http(s) URL")
+			}
+		}
+		if c.Auth.ClockSkew < 0 {
+			add("auth.clock_skew must not be negative")
 		}
 	}
 	if c.Signing.HostedCustody.Enabled {

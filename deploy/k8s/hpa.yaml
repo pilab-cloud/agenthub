@@ -1,0 +1,53 @@
+# M3.8 — HorizontalPodAutoscaler for agenthub-server.
+#
+# Floor of 2 matches the Deployment replicas (and the ≥2 replicas required
+# for cache.kind: valkey + HA). HPA also supersedes the manual replica count:
+# kubectl apply of deployment.yaml after this file resets it to 2, so adjust
+# spec.replicas there (or remove it) once the HPA is active.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agenthub-server
+  namespace: agenthub
+  labels:
+    app.kubernetes.io/name: agenthub-server
+    app.kubernetes.io/part-of: agenthub
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agenthub-server
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleDown:
+      # Do not shed capacity during a short traffic dip.
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      # Recover from a burst quickly, but stay below the maxSurge=1 rollout.
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+      selectPolicy: Max

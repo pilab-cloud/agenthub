@@ -1,0 +1,39 @@
+# M3.8 — public Ingress: https://agenthub.pilab.hu with TLS.
+#
+# Requires:
+#   - ingress-nginx (ingressClassName: nginx)
+#   - cert-manager issuing the `agenthub-tls` Secret for *.pilab.hu
+#   - DNS A/AAAA for agenthub.pilab.hu pointing at the ingress controller
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agenthub
+  namespace: agenthub
+  labels:
+    app.kubernetes.io/name: agenthub-server
+    app.kubernetes.io/part-of: agenthub
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Bundle/blob uploads are up to storage.max_bundle_bytes (64 MiB); give
+    # the proxy room beyond the default 1 MiB client max body size.
+    nginx.ingress.kubernetes.io/proxy-body-size: "128m"
+    # ConnectRPC streaming + long catalog reads.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - agenthub.pilab.hu
+      secretName: agenthub-tls
+  rules:
+    - host: agenthub.pilab.hu
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: agenthub
+                port:
+                  name: http

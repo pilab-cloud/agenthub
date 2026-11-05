@@ -1,0 +1,175 @@
+# M3.8 — agenthub-server Deployment.
+#
+# Image: build with `make docker` (deploy/docker/Dockerfile) and push to the
+# project registry; replace the tag (or pin a digest) before applying.
+#
+# Configuration precedence is defaults < config file < AGENTHUB_* env < flags
+# (docs/architecture/operations.md §2). There is no ConfigMap here: the
+# non-secret settings below cover a production pod and everything else comes
+# from the `agenthub-secrets` Secret. Secret keys are unprefixed so the same
+# Secret can feed the migration Job; the env entries below map them to the
+# AGENTHUB_* names the config loader binds. Expected keys (all optional except
+# the DSN):
+#
+#   DATABASE_DSN              postgres://user:pass@host:5432/agenthub?sslmode=require
+#   SESSION_SECRET            BFF cookie HMAC, >= 32 chars
+#   SSO_CLIENT_ID             OIDC client id registered on the SSO
+#   SSO_CLIENT_SECRET         OIDC client secret (SSO BFF)
+#
+# storage.kind / cache.kind are validated by the config loader but the server
+# does not construct either backend yet (federation blobs stay in memory).
+# Do not add S3/Valkey credentials until that backend lands.
+#
+# Migrations are NOT run by this Deployment: `agenthub-server migrate up` runs
+# as a Kubernetes Job before the rollout (operations.md §10.3, migrate-job.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agenthub-server
+  namespace: agenthub
+  labels:
+    app.kubernetes.io/name: agenthub-server
+    app.kubernetes.io/part-of: agenthub
+    app.kubernetes.io/component: server
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  # Zero-downtime rollout: surge first, never drop below the ready count
+  # (operations.md §10.3).
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agenthub-server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agenthub-server
+        app.kubernetes.io/part-of: agenthub
+        app.kubernetes.io/component: server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9100"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: agenthub-server
+      containers:
+        - name: server
+          # Built from deploy/docker/Dockerfile; replace the tag with the
+          # published digest when promoting a release.
+          image: ghcr.io/pilab-dev/agenthub-server:20261105-r2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9100
+              protocol: TCP
+          env:
+            - name: AGENTHUB_ENV
+              value: prod
+            - name: AGENTHUB_SERVER_HTTP_ADDR
+              value: ":8080"
+            - name: AGENTHUB_SERVER_METRICS_ADDR
+              value: ":9100"
+            - name: AGENTHUB_SERVER_PUBLIC_URL
+              value: "https://agenthub.pilab.hu"
+            - name: AGENTHUB_OBSERVABILITY_LOG_FORMAT
+              value: json
+            # Secrets carry unprefixed keys because the same Secret is also
+            # mounted by the migration Job. Map them to the AGENTHUB_* names
+            # the config loader binds.
+            - name: AGENTHUB_DATABASE_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: agenthub-secrets
+                  key: DATABASE_DSN
+            - name: AGENTHUB_AUTH_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: agenthub-secrets
+                  key: SESSION_SECRET
+            # OIDC BFF (M3.5): /auth/{login,callback,logout}.
+            - name: AGENTHUB_AUTH_ISSUER
+              value: "https://sso.pilab.hu"
+            - name: AGENTHUB_AUTH_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: agenthub-secrets
+                  key: SSO_CLIENT_ID
+            - name: AGENTHUB_AUTH_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: agenthub-secrets
+                  key: SSO_CLIENT_SECRET
+            - name: AGENTHUB_AUTH_REDIRECT_URL
+              value: "https://agenthub.pilab.hu/auth/callback"
+            - name: AGENTHUB_AUTH_POST_LOGOUT_REDIRECT_URL
+              value: "https://agenthub.pilab.hu/"
+          envFrom:
+            - secretRef:
+                name: agenthub-secrets
+          # Liveness: /healthz is a constant 200 that never touches the DB, so
+          # a database outage does not restart pods (internal/server/health.go).
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Readiness: /readyz pings the database (2s timeout) and returns 503
+          # until it is reachable, so traffic only reaches pods that can serve.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+            successThreshold: 1
+          # Startup gate so a slow boot is not killed by the liveness probe.
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          # No preStop hook: the image is distroless (no shell/sleep). The
+          # server handles SIGTERM itself (server.shutdown_grace = 20s), and
+          # the grace period below outlives it.
+      terminationGracePeriodSeconds: 30

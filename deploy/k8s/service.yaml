@@ -1,0 +1,26 @@
+# M3.8 — agenthub-server Service.
+#
+# `http` is the public listener (ingress → 8080). `metrics` is the private
+# `server.metrics_addr` (Prometheus scrapes :9100/metrics directly; it is not
+# routed by the Ingress).
+apiVersion: v1
+kind: Service
+metadata:
+  name: agenthub
+  namespace: agenthub
+  labels:
+    app.kubernetes.io/name: agenthub-server
+    app.kubernetes.io/part-of: agenthub
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: agenthub-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+    - name: metrics
+      port: 9100
+      targetPort: metrics
+      protocol: TCP

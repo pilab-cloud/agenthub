@@ -139,6 +139,12 @@ cache:
   ttl_resolve: 2m
   ttl_session: 12h
 
+> **Implementation status (M3.8):** `storage.*` and `cache.*` are validated
+> but the server does not construct either backend yet. Federation bundle
+> blobs are in-memory, so they are per-pod and lost on restart. Production
+> config must still declare `s3` / `valkey` to pass validation, but the
+> endpoint, bucket and cache TTL values are inert until the backends land.
+
 auth:
   issuer: "https://sso.pilab.hu"
   discovery_url: "https://sso.pilab.hu/.well-known/openid-configuration"
@@ -150,6 +156,7 @@ auth:
   introspection_url: "https://sso.pilab.hu/oauth2/introspect"
   client_id: "${SSO_CLIENT_ID}"          # agenthub-web
   client_secret: "${SSO_CLIENT_SECRET}"  # from OpenBao
+  session_secret: "${AGENTHUB_SESSION_SECRET}" # BFF cookie HMAC, >= 32 chars
   redirect_url: "https://agenthub.pilab.hu/auth/callback"
   post_logout_redirect_url: "https://agenthub.pilab.hu/"
   scopes: ["openid", "profile", "email", "agenthub.read", "agenthub.publish", "agenthub.admin"]
@@ -244,6 +251,7 @@ startup warning on every boot.
 | --- | --- | --- | --- |
 | `DB_PASSWORD` | Server | External Secrets / SOPS | 90 days |
 | `SSO_CLIENT_SECRET` | Server (web BFF) | OpenBao `secret/data/AgentHub#SSO_CLIENT_SECRET` | 180 days |
+| `AGENTHUB_SESSION_SECRET` | Server (web BFF cookie HMAC) | OpenBao `secret/data/AgentHub#AGENTHUB_SESSION_SECRET` | 180 days |
 | `VALKEY_PASSWORD` | Server | External Secrets | 90 days |
 | S3 credentials | Server, worker | Workload identity if available | 90 days |
 | Hub Ed25519 private key | Server (signing) | HSM/KMS or mounted secret | Yearly, with overlap |
