@@ -1,0 +1,23 @@
+{{define "version"}}<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body class="min-h-full bg-slate-950 text-slate-100 antialiased">
+  <main class="mx-auto max-w-5xl px-6 py-16">
+    <header class="mb-8">
+      <p class="text-sm font-semibold uppercase tracking-widest text-sky-400">Version</p>
+      <h1 class="mt-2 text-3xl font-bold">{{.Namespace}}/{{.Name}}@{{.Ver}}</h1>
+      <p class="mt-1 text-sm text-slate-400">kind: {{.Kind}}</p>
+      {{if .VersionInfo}}
+      <p class="mt-2 text-xs text-slate-500">bundle size: {{.VersionInfo.BundleSize}}</p>
+      {{end}}
+    </header>
+    <p class="text-xs text-slate-500">version {{.Version}}</p>
+  </main>
+</body>
+</html>
+{{end}}

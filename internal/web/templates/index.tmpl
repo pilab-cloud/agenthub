@@ -31,6 +31,31 @@
         <p class="mt-2 text-sm text-slate-400">CLI + OpenCode V2 plugin reconcile desired state into local runtime state.</p>
       </article>
     </section>
+    {{if .Assets}}
+    <section class="mt-12">
+      <div class="mb-4 flex items-end justify-between">
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-slate-400">Featured assets</h2>
+        <a href="/assets" class="text-sm text-sky-400 hover:text-sky-300">Browse all →</a>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {{range .Assets}}
+        <article class="flex flex-col rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xl">
+              {{if .IconDigest}}<img src="/icon/{{.IconDigest}}" alt="" class="h-10 w-10 rounded-lg object-cover">{{else}}{{kindIcon .Kind}}{{end}}
+            </div>
+            <div class="min-w-0 flex-1">
+              <h3 class="truncate font-semibold"><a href="/a/{{.Namespace}}/{{kindSlug .Kind}}/{{.Name}}" class="hover:text-sky-300">{{or .DisplayName .Name}}</a></h3>
+              <p class="text-xs uppercase tracking-widest text-slate-500">{{kindSlug .Kind}} · {{.Namespace}}</p>
+            </div>
+          </div>
+          {{if .Summary}}<p class="mt-3 text-sm text-slate-300">{{.Summary}}</p>{{end}}
+          {{if .Tags}}<div class="mt-3 flex flex-wrap gap-1.5">{{range .Tags}}<span class="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">{{.}}</span>{{end}}</div>{{end}}
+        </article>
+        {{end}}
+      </div>
+    </section>
+    {{end}}
     <section class="mt-12 rounded-xl border border-slate-800 bg-slate-900/40 p-5">
       <h2 class="text-sm font-semibold uppercase tracking-widest text-slate-400">Quick install</h2>
       <pre class="mt-3 overflow-x-auto rounded-lg bg-black/40 p-4 text-sm text-sky-200"><code>go install go.pilab.hu/agenthub/cmd/agenthub@latest
