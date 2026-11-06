@@ -1,0 +1,53 @@
+# Local playground: no SSO (identity comes from the X-Auth-Subject header),
+# in-memory stores, blobs served from this process. Never expose this publicly.
+env: dev
+
+server:
+  http_addr: ":8080"
+  grpc_addr: ":9090"
+  metrics_addr: ":9100"
+  public_url: "http://127.0.0.1:8080"
+  read_timeout: 10s
+  write_timeout: 30s
+  idle_timeout: 120s
+  shutdown_grace: 20s
+  max_request_bytes: 4194304
+  trusted_proxies: ["127.0.0.1/32"]
+
+database:
+  dsn: "postgresql://agenthub:agenthub@localhost:5432/agenthub?sslmode=disable"
+  max_open_conns: 20
+  max_idle_conns: 10
+  conn_max_lifetime: 30m
+  statement_timeout: 15s
+  migrate_on_start: false
+
+storage:
+  kind: filesystem
+  max_bundle_bytes: 67108864
+  max_file_bytes: 10485760
+
+cache:
+  kind: memory
+
+
+signing:
+  require_publisher_signature: false
+
+observability:
+  log_level: info
+  log_format: console
+  metrics_enabled: true
+  pprof_enabled: true
+
+web:
+  enable: true
+  landing_cards: 12
+  landing_ttl: 60s
+  allow_web_authoring: true
+
+vault:
+  address: "http://localhost:8200"
+  path: "secret/data/AgentHub"
+  token: "dev-root-token"
+
