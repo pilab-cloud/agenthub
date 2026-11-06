@@ -9,7 +9,11 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/uptrace/bun"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 
+	"go.pilab.hu/agenthub/internal/metrics"
 	"go.pilab.hu/agenthub/internal/version"
 )
 
@@ -56,13 +60,21 @@ func accessLogMiddleware() echo.MiddlewareFunc {
 	}
 }
 
-func metricsMiddleware(m interface {
-	Record(route, method string, status int, dur float64)
-},
-) echo.MiddlewareFunc {
+func metricsMiddleware(m *metrics.Metrics) echo.MiddlewareFunc {
+	var tracer oteltrace.Tracer
+	if m != nil && m.TracerProvider != nil {
+		tracer = m.TracerProvider.Tracer("go.pilab.hu/agenthub/server")
+	}
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
+			var span oteltrace.Span
+			if tracer != nil {
+				var ctx context.Context
+				ctx, span = tracer.Start(c.Request().Context(), spanName(c))
+				c.SetRequest(c.Request().WithContext(ctx))
+			}
+
 			err := next(c)
 			route := c.Path()
 			if route == "" {
@@ -75,8 +87,33 @@ func metricsMiddleware(m interface {
 					status = he.Code
 				}
 			}
-			m.Record(route, c.Request().Method, status, time.Since(start).Seconds())
+			// M3.7: the span carries the same low-cardinality attributes as
+			// the Prometheus instruments (registered route template).
+			if span != nil {
+				span.SetAttributes(
+					semconv.HTTPRequestMethodKey.String(c.Request().Method),
+					semconv.HTTPRouteKey.String(route),
+					semconv.HTTPResponseStatusCodeKey.Int(status),
+				)
+				if status >= http.StatusInternalServerError {
+					span.SetStatus(codes.Error, http.StatusText(status))
+				}
+				span.End()
+			}
+			if m != nil {
+				m.Record(route, c.Request().Method, status, time.Since(start).Seconds())
+			}
 			return err
 		}
 	}
+}
+
+// spanName builds the server span name from the matched route template
+// ("GET /healthz"), falling back to the bare method for unmatched requests so
+// the span name stays low-cardinality.
+func spanName(c echo.Context) string {
+	if p := c.Path(); p != "" {
+		return c.Request().Method + " " + p
+	}
+	return c.Request().Method
 }

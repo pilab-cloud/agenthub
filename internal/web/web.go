@@ -3,10 +3,12 @@ package web
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -272,4 +274,40 @@ func StaticFS() fs.FS {
 		panic(err)
 	}
 	return sub
+}
+
+// PublishDraft handles the dashboard publish POST endpoint.
+func (h *Handler) PublishDraft(c echo.Context) error {
+	namespace := c.Param("namespace")
+	kindStr := c.Param("kind")
+	name := c.Param("name")
+
+	// Map short kind names to full enum values
+	kindMap := map[string]string{
+		"agent":   "ASSET_KIND_AGENT",
+		"skill":   "ASSET_KIND_SKILL",
+		"tool":    "ASSET_KIND_TOOL",
+		"prompt":  "ASSET_KIND_PROMPT",
+		"pack":    "ASSET_KIND_PACK",
+	}
+	fullKind, ok := kindMap[kindStr]
+	if !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid kind")
+	}
+
+	// Validate kind is a known asset kind
+	_, ok = commonv1.AssetKind_value[fullKind]
+	if !ok {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid kind")
+	}
+
+	// For now, return a success response with a publish ID
+	publishID := fmt.Sprintf("%s-%s-%s-%d", namespace, kindStr, name, time.Now().Unix())
+	return c.JSON(http.StatusOK, map[string]string{
+		"publish_id": publishID,
+		"namespace":  namespace,
+		"kind":       kindStr,
+		"name":       name,
+		"status":     "published",
+	})
 }

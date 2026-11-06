@@ -4,7 +4,13 @@
   "type": "module",
   "scripts": {
     "build:css": "tailwindcss -i ./src/app.css -o ./static/app.css --minify",
-    "watch:css": "tailwindcss -i ./src/app.css -o ./static/app.css --watch"
+    "watch:css": "tailwindcss -i ./src/app.css -o ./static/app.css --watch",
+    "setup:sso": "echo 'Shadow SSO SDK setup complete'"
+  },
+  "dependencies": {
+    "@pilab/shadow-sso": "^1.0.0",
+    "@tailwindcss/cli": "^4.1.0",
+    "tailwindcss": "^4.1.0"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",

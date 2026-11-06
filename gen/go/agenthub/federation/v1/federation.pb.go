@@ -1143,8 +1143,13 @@ func (x *TriggerSyncResponse) GetStartedAt() *timestamppb.Timestamp {
 }
 
 type ExportBundleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BundleDigest  *v1.Digest             `protobuf:"bytes,1,opt,name=bundle_digest,json=bundleDigest,proto3" json:"bundle_digest,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// bundle_digest selects a version by its bundle digest. ref takes
+	// precedence when both are set, and then the two must agree.
+	BundleDigest *v1.Digest `protobuf:"bytes,1,opt,name=bundle_digest,json=bundleDigest,proto3" json:"bundle_digest,omitempty"`
+	// ref selects a version by identity; an empty version means the asset's
+	// latest published version.
+	Ref           *v1.AssetRef `protobuf:"bytes,2,opt,name=ref,proto3" json:"ref,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1186,16 +1191,308 @@ func (x *ExportBundleRequest) GetBundleDigest() *v1.Digest {
 	return nil
 }
 
-type ExportBundleResponse struct {
+func (x *ExportBundleRequest) GetRef() *v1.AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+// BundleHeader opens an ExportBundle/ImportBundle stream: everything needed
+// to recreate a version except the file bytes, which follow as
+// BundleFileChunk messages while the stream is open.
+type BundleHeader struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// ref identifies the version; hub is the id of the exporting hub.
+	Ref            *v1.AssetRef           `protobuf:"bytes,1,opt,name=ref,proto3" json:"ref,omitempty"`
+	ManifestDigest *v1.Digest             `protobuf:"bytes,2,opt,name=manifest_digest,json=manifestDigest,proto3" json:"manifest_digest,omitempty"`
+	BundleDigest   *v1.Digest             `protobuf:"bytes,3,opt,name=bundle_digest,json=bundleDigest,proto3" json:"bundle_digest,omitempty"`
+	BundleSize     uint64                 `protobuf:"varint,4,opt,name=bundle_size,json=bundleSize,proto3" json:"bundle_size,omitempty"`
+	Status         v1.VersionStatus       `protobuf:"varint,5,opt,name=status,proto3,enum=agenthub.common.v1.VersionStatus" json:"status,omitempty"`
+	PublishedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=published_at,json=publishedAt,proto3" json:"published_at,omitempty"`
+	Manifest       []byte                 `protobuf:"bytes,7,opt,name=manifest,proto3" json:"manifest,omitempty"`
+	// files lists the files of the bundle; has_bytes tells whether the sender
+	// streams the file's content after this header.
+	Files         []*BundleFile `protobuf:"bytes,8,rep,name=files,proto3" json:"files,omitempty"`
+	DisplayName   string        `protobuf:"bytes,9,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Summary       string        `protobuf:"bytes,10,opt,name=summary,proto3" json:"summary,omitempty"`
+	Tags          []string      `protobuf:"bytes,11,rep,name=tags,proto3" json:"tags,omitempty"`
+	Categories    []string      `protobuf:"bytes,12,rep,name=categories,proto3" json:"categories,omitempty"`
+	License       string        `protobuf:"bytes,13,opt,name=license,proto3" json:"license,omitempty"`
+	Repository    string        `protobuf:"bytes,14,opt,name=repository,proto3" json:"repository,omitempty"`
+	Readme        string        `protobuf:"bytes,15,opt,name=readme,proto3" json:"readme,omitempty"`
+	Changelog     string        `protobuf:"bytes,16,opt,name=changelog,proto3" json:"changelog,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BundleHeader) Reset() {
+	*x = BundleHeader{}
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BundleHeader) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BundleHeader) ProtoMessage() {}
+
+func (x *BundleHeader) ProtoReflect() protoreflect.Message {
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BundleHeader.ProtoReflect.Descriptor instead.
+func (*BundleHeader) Descriptor() ([]byte, []int) {
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *BundleHeader) GetRef() *v1.AssetRef {
+	if x != nil {
+		return x.Ref
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetManifestDigest() *v1.Digest {
+	if x != nil {
+		return x.ManifestDigest
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetBundleDigest() *v1.Digest {
+	if x != nil {
+		return x.BundleDigest
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetBundleSize() uint64 {
+	if x != nil {
+		return x.BundleSize
+	}
+	return 0
+}
+
+func (x *BundleHeader) GetStatus() v1.VersionStatus {
+	if x != nil {
+		return x.Status
+	}
+	return v1.VersionStatus(0)
+}
+
+func (x *BundleHeader) GetPublishedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PublishedAt
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetManifest() []byte {
+	if x != nil {
+		return x.Manifest
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetFiles() []*BundleFile {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *BundleHeader) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *BundleHeader) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetCategories() []string {
+	if x != nil {
+		return x.Categories
+	}
+	return nil
+}
+
+func (x *BundleHeader) GetLicense() string {
+	if x != nil {
+		return x.License
+	}
+	return ""
+}
+
+func (x *BundleHeader) GetRepository() string {
+	if x != nil {
+		return x.Repository
+	}
+	return ""
+}
+
+func (x *BundleHeader) GetReadme() string {
+	if x != nil {
+		return x.Readme
+	}
+	return ""
+}
+
+func (x *BundleHeader) GetChangelog() string {
+	if x != nil {
+		return x.Changelog
+	}
+	return ""
+}
+
+// BundleFile is one file of a bundle: the descriptor declared by the
+// manifest, plus whether the sending side holds the file's bytes.
+type BundleFile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	File          *v1.FileDescriptor     `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
+	HasBytes      bool                   `protobuf:"varint,2,opt,name=has_bytes,json=hasBytes,proto3" json:"has_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BundleFile) Reset() {
+	*x = BundleFile{}
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BundleFile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BundleFile) ProtoMessage() {}
+
+func (x *BundleFile) ProtoReflect() protoreflect.Message {
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BundleFile.ProtoReflect.Descriptor instead.
+func (*BundleFile) Descriptor() ([]byte, []int) {
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *BundleFile) GetFile() *v1.FileDescriptor {
+	if x != nil {
+		return x.File
+	}
+	return nil
+}
+
+func (x *BundleFile) GetHasBytes() bool {
+	if x != nil {
+		return x.HasBytes
+	}
+	return false
+}
+
+// BundleFileChunk locates the bytes carried in the enclosing message's data
+// field within the file named by path.
+type BundleFileChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Path          string                 `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
+	Offset        uint64                 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BundleFileChunk) Reset() {
+	*x = BundleFileChunk{}
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BundleFileChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BundleFileChunk) ProtoMessage() {}
+
+func (x *BundleFileChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BundleFileChunk.ProtoReflect.Descriptor instead.
+func (*BundleFileChunk) Descriptor() ([]byte, []int) {
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *BundleFileChunk) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *BundleFileChunk) GetOffset() uint64 {
+	if x != nil {
+		return x.Offset
+	}
+	return 0
+}
+
+type ExportBundleResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// data carries the bytes of the chunk named by file. It is always empty
+	// in the header message.
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	// Types that are valid to be assigned to Part:
+	//
+	//	*ExportBundleResponse_Header
+	//	*ExportBundleResponse_File
+	Part          isExportBundleResponse_Part `protobuf_oneof:"part"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExportBundleResponse) Reset() {
 	*x = ExportBundleResponse{}
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[19]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1207,7 +1504,7 @@ func (x *ExportBundleResponse) String() string {
 func (*ExportBundleResponse) ProtoMessage() {}
 
 func (x *ExportBundleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[19]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1220,7 +1517,7 @@ func (x *ExportBundleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportBundleResponse.ProtoReflect.Descriptor instead.
 func (*ExportBundleResponse) Descriptor() ([]byte, []int) {
-	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{19}
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *ExportBundleResponse) GetData() []byte {
@@ -1230,16 +1527,64 @@ func (x *ExportBundleResponse) GetData() []byte {
 	return nil
 }
 
+func (x *ExportBundleResponse) GetPart() isExportBundleResponse_Part {
+	if x != nil {
+		return x.Part
+	}
+	return nil
+}
+
+func (x *ExportBundleResponse) GetHeader() *BundleHeader {
+	if x != nil {
+		if x, ok := x.Part.(*ExportBundleResponse_Header); ok {
+			return x.Header
+		}
+	}
+	return nil
+}
+
+func (x *ExportBundleResponse) GetFile() *BundleFileChunk {
+	if x != nil {
+		if x, ok := x.Part.(*ExportBundleResponse_File); ok {
+			return x.File
+		}
+	}
+	return nil
+}
+
+type isExportBundleResponse_Part interface {
+	isExportBundleResponse_Part()
+}
+
+type ExportBundleResponse_Header struct {
+	Header *BundleHeader `protobuf:"bytes,2,opt,name=header,proto3,oneof"`
+}
+
+type ExportBundleResponse_File struct {
+	File *BundleFileChunk `protobuf:"bytes,3,opt,name=file,proto3,oneof"`
+}
+
+func (*ExportBundleResponse_Header) isExportBundleResponse_Part() {}
+
+func (*ExportBundleResponse_File) isExportBundleResponse_Part() {}
+
 type ImportBundleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// data carries the bytes of the chunk named by file. It is always empty
+	// in the header message.
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	// Types that are valid to be assigned to Part:
+	//
+	//	*ImportBundleRequest_Header
+	//	*ImportBundleRequest_File
+	Part          isImportBundleRequest_Part `protobuf_oneof:"part"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ImportBundleRequest) Reset() {
 	*x = ImportBundleRequest{}
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[20]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1251,7 +1596,7 @@ func (x *ImportBundleRequest) String() string {
 func (*ImportBundleRequest) ProtoMessage() {}
 
 func (x *ImportBundleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[20]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1264,7 +1609,7 @@ func (x *ImportBundleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportBundleRequest.ProtoReflect.Descriptor instead.
 func (*ImportBundleRequest) Descriptor() ([]byte, []int) {
-	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{20}
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ImportBundleRequest) GetData() []byte {
@@ -1274,17 +1619,60 @@ func (x *ImportBundleRequest) GetData() []byte {
 	return nil
 }
 
+func (x *ImportBundleRequest) GetPart() isImportBundleRequest_Part {
+	if x != nil {
+		return x.Part
+	}
+	return nil
+}
+
+func (x *ImportBundleRequest) GetHeader() *BundleHeader {
+	if x != nil {
+		if x, ok := x.Part.(*ImportBundleRequest_Header); ok {
+			return x.Header
+		}
+	}
+	return nil
+}
+
+func (x *ImportBundleRequest) GetFile() *BundleFileChunk {
+	if x != nil {
+		if x, ok := x.Part.(*ImportBundleRequest_File); ok {
+			return x.File
+		}
+	}
+	return nil
+}
+
+type isImportBundleRequest_Part interface {
+	isImportBundleRequest_Part()
+}
+
+type ImportBundleRequest_Header struct {
+	Header *BundleHeader `protobuf:"bytes,2,opt,name=header,proto3,oneof"`
+}
+
+type ImportBundleRequest_File struct {
+	File *BundleFileChunk `protobuf:"bytes,3,opt,name=file,proto3,oneof"`
+}
+
+func (*ImportBundleRequest_Header) isImportBundleRequest_Part() {}
+
+func (*ImportBundleRequest_File) isImportBundleRequest_Part() {}
+
 type ImportBundleResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	BundleDigest  *v1.Digest             `protobuf:"bytes,1,opt,name=bundle_digest,json=bundleDigest,proto3" json:"bundle_digest,omitempty"`
-	BytesWritten  uint64                 `protobuf:"varint,2,opt,name=bytes_written,json=bytesWritten,proto3" json:"bytes_written,omitempty"`
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	BundleDigest *v1.Digest             `protobuf:"bytes,1,opt,name=bundle_digest,json=bundleDigest,proto3" json:"bundle_digest,omitempty"`
+	// bytes_written is the bundle content this import accepted: the manifest
+	// bytes plus every file byte stored.
+	BytesWritten  uint64 `protobuf:"varint,2,opt,name=bytes_written,json=bytesWritten,proto3" json:"bytes_written,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ImportBundleResponse) Reset() {
 	*x = ImportBundleResponse{}
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[21]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1296,7 +1684,7 @@ func (x *ImportBundleResponse) String() string {
 func (*ImportBundleResponse) ProtoMessage() {}
 
 func (x *ImportBundleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[21]
+	mi := &file_agenthub_federation_v1_federation_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1309,7 +1697,7 @@ func (x *ImportBundleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportBundleResponse.ProtoReflect.Descriptor instead.
 func (*ImportBundleResponse) Descriptor() ([]byte, []int) {
-	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{21}
+	return file_agenthub_federation_v1_federation_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ImportBundleResponse) GetBundleDigest() *v1.Digest {
@@ -1429,13 +1817,50 @@ const file_agenthub_federation_v1_federation_proto_rawDesc = "" +
 	"\x13TriggerSyncResponse\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x129\n" +
 	"\n" +
-	"started_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\"V\n" +
+	"started_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\"\x86\x01\n" +
 	"\x13ExportBundleRequest\x12?\n" +
-	"\rbundle_digest\x18\x01 \x01(\v2\x1a.agenthub.common.v1.DigestR\fbundleDigest\"*\n" +
+	"\rbundle_digest\x18\x01 \x01(\v2\x1a.agenthub.common.v1.DigestR\fbundleDigest\x12.\n" +
+	"\x03ref\x18\x02 \x01(\v2\x1c.agenthub.common.v1.AssetRefR\x03ref\"\x96\x05\n" +
+	"\fBundleHeader\x12.\n" +
+	"\x03ref\x18\x01 \x01(\v2\x1c.agenthub.common.v1.AssetRefR\x03ref\x12C\n" +
+	"\x0fmanifest_digest\x18\x02 \x01(\v2\x1a.agenthub.common.v1.DigestR\x0emanifestDigest\x12?\n" +
+	"\rbundle_digest\x18\x03 \x01(\v2\x1a.agenthub.common.v1.DigestR\fbundleDigest\x12\x1f\n" +
+	"\vbundle_size\x18\x04 \x01(\x04R\n" +
+	"bundleSize\x129\n" +
+	"\x06status\x18\x05 \x01(\x0e2!.agenthub.common.v1.VersionStatusR\x06status\x12=\n" +
+	"\fpublished_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\vpublishedAt\x12\x1a\n" +
+	"\bmanifest\x18\a \x01(\fR\bmanifest\x128\n" +
+	"\x05files\x18\b \x03(\v2\".agenthub.federation.v1.BundleFileR\x05files\x12!\n" +
+	"\fdisplay_name\x18\t \x01(\tR\vdisplayName\x12\x18\n" +
+	"\asummary\x18\n" +
+	" \x01(\tR\asummary\x12\x12\n" +
+	"\x04tags\x18\v \x03(\tR\x04tags\x12\x1e\n" +
+	"\n" +
+	"categories\x18\f \x03(\tR\n" +
+	"categories\x12\x18\n" +
+	"\alicense\x18\r \x01(\tR\alicense\x12\x1e\n" +
+	"\n" +
+	"repository\x18\x0e \x01(\tR\n" +
+	"repository\x12\x16\n" +
+	"\x06readme\x18\x0f \x01(\tR\x06readme\x12\x1c\n" +
+	"\tchangelog\x18\x10 \x01(\tR\tchangelog\"a\n" +
+	"\n" +
+	"BundleFile\x126\n" +
+	"\x04file\x18\x01 \x01(\v2\".agenthub.common.v1.FileDescriptorR\x04file\x12\x1b\n" +
+	"\thas_bytes\x18\x02 \x01(\bR\bhasBytes\"=\n" +
+	"\x0fBundleFileChunk\x12\x12\n" +
+	"\x04path\x18\x01 \x01(\tR\x04path\x12\x16\n" +
+	"\x06offset\x18\x02 \x01(\x04R\x06offset\"\xb1\x01\n" +
 	"\x14ExportBundleResponse\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data\")\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12>\n" +
+	"\x06header\x18\x02 \x01(\v2$.agenthub.federation.v1.BundleHeaderH\x00R\x06header\x12=\n" +
+	"\x04file\x18\x03 \x01(\v2'.agenthub.federation.v1.BundleFileChunkH\x00R\x04fileB\x06\n" +
+	"\x04part\"\xb0\x01\n" +
 	"\x13ImportBundleRequest\x12\x12\n" +
-	"\x04data\x18\x01 \x01(\fR\x04data\"|\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12>\n" +
+	"\x06header\x18\x02 \x01(\v2$.agenthub.federation.v1.BundleHeaderH\x00R\x06header\x12=\n" +
+	"\x04file\x18\x03 \x01(\v2'.agenthub.federation.v1.BundleFileChunkH\x00R\x04fileB\x06\n" +
+	"\x04part\"|\n" +
 	"\x14ImportBundleResponse\x12?\n" +
 	"\rbundle_digest\x18\x01 \x01(\v2\x1a.agenthub.common.v1.DigestR\fbundleDigest\x12#\n" +
 	"\rbytes_written\x18\x02 \x01(\x04R\fbytesWritten2\xda\a\n" +
@@ -1464,7 +1889,7 @@ func file_agenthub_federation_v1_federation_proto_rawDescGZIP() []byte {
 	return file_agenthub_federation_v1_federation_proto_rawDescData
 }
 
-var file_agenthub_federation_v1_federation_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_agenthub_federation_v1_federation_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_agenthub_federation_v1_federation_proto_goTypes = []any{
 	(*GetHubInfoRequest)(nil),      // 0: agenthub.federation.v1.GetHubInfoRequest
 	(*GetHubInfoResponse)(nil),     // 1: agenthub.federation.v1.GetHubInfoResponse
@@ -1485,58 +1910,76 @@ var file_agenthub_federation_v1_federation_proto_goTypes = []any{
 	(*TriggerSyncRequest)(nil),     // 16: agenthub.federation.v1.TriggerSyncRequest
 	(*TriggerSyncResponse)(nil),    // 17: agenthub.federation.v1.TriggerSyncResponse
 	(*ExportBundleRequest)(nil),    // 18: agenthub.federation.v1.ExportBundleRequest
-	(*ExportBundleResponse)(nil),   // 19: agenthub.federation.v1.ExportBundleResponse
-	(*ImportBundleRequest)(nil),    // 20: agenthub.federation.v1.ImportBundleRequest
-	(*ImportBundleResponse)(nil),   // 21: agenthub.federation.v1.ImportBundleResponse
-	(*v1.Digest)(nil),              // 22: agenthub.common.v1.Digest
-	(*v1.Signature)(nil),           // 23: agenthub.common.v1.Signature
-	(v1.AssetKind)(0),              // 24: agenthub.common.v1.AssetKind
-	(*timestamppb.Timestamp)(nil),  // 25: google.protobuf.Timestamp
+	(*BundleHeader)(nil),           // 19: agenthub.federation.v1.BundleHeader
+	(*BundleFile)(nil),             // 20: agenthub.federation.v1.BundleFile
+	(*BundleFileChunk)(nil),        // 21: agenthub.federation.v1.BundleFileChunk
+	(*ExportBundleResponse)(nil),   // 22: agenthub.federation.v1.ExportBundleResponse
+	(*ImportBundleRequest)(nil),    // 23: agenthub.federation.v1.ImportBundleRequest
+	(*ImportBundleResponse)(nil),   // 24: agenthub.federation.v1.ImportBundleResponse
+	(*v1.Digest)(nil),              // 25: agenthub.common.v1.Digest
+	(*v1.Signature)(nil),           // 26: agenthub.common.v1.Signature
+	(v1.AssetKind)(0),              // 27: agenthub.common.v1.AssetKind
+	(*timestamppb.Timestamp)(nil),  // 28: google.protobuf.Timestamp
+	(*v1.AssetRef)(nil),            // 29: agenthub.common.v1.AssetRef
+	(v1.VersionStatus)(0),          // 30: agenthub.common.v1.VersionStatus
+	(*v1.FileDescriptor)(nil),      // 31: agenthub.common.v1.FileDescriptor
 }
 var file_agenthub_federation_v1_federation_proto_depIdxs = []int32{
 	2,  // 0: agenthub.federation.v1.GetHubInfoResponse.hub:type_name -> agenthub.federation.v1.HubInfo
-	22, // 1: agenthub.federation.v1.GetSnapshotResponse.root_digest:type_name -> agenthub.common.v1.Digest
-	23, // 2: agenthub.federation.v1.GetSnapshotResponse.signature:type_name -> agenthub.common.v1.Signature
-	22, // 3: agenthub.federation.v1.SyncChangesResponse.prev_digest:type_name -> agenthub.common.v1.Digest
+	25, // 1: agenthub.federation.v1.GetSnapshotResponse.root_digest:type_name -> agenthub.common.v1.Digest
+	26, // 2: agenthub.federation.v1.GetSnapshotResponse.signature:type_name -> agenthub.common.v1.Signature
+	25, // 3: agenthub.federation.v1.SyncChangesResponse.prev_digest:type_name -> agenthub.common.v1.Digest
 	7,  // 4: agenthub.federation.v1.SyncChangesResponse.entries:type_name -> agenthub.federation.v1.CatalogEntry
 	8,  // 5: agenthub.federation.v1.SyncChangesResponse.tombstones:type_name -> agenthub.federation.v1.Tombstone
-	22, // 6: agenthub.federation.v1.SyncChangesResponse.page_digest:type_name -> agenthub.common.v1.Digest
-	23, // 7: agenthub.federation.v1.SyncChangesResponse.signature:type_name -> agenthub.common.v1.Signature
-	24, // 8: agenthub.federation.v1.CatalogEntry.kind:type_name -> agenthub.common.v1.AssetKind
-	22, // 9: agenthub.federation.v1.CatalogEntry.manifest_digest:type_name -> agenthub.common.v1.Digest
-	22, // 10: agenthub.federation.v1.CatalogEntry.bundle_digest:type_name -> agenthub.common.v1.Digest
-	25, // 11: agenthub.federation.v1.CatalogEntry.published_at:type_name -> google.protobuf.Timestamp
-	25, // 12: agenthub.federation.v1.Tombstone.at:type_name -> google.protobuf.Timestamp
+	25, // 6: agenthub.federation.v1.SyncChangesResponse.page_digest:type_name -> agenthub.common.v1.Digest
+	26, // 7: agenthub.federation.v1.SyncChangesResponse.signature:type_name -> agenthub.common.v1.Signature
+	27, // 8: agenthub.federation.v1.CatalogEntry.kind:type_name -> agenthub.common.v1.AssetKind
+	25, // 9: agenthub.federation.v1.CatalogEntry.manifest_digest:type_name -> agenthub.common.v1.Digest
+	25, // 10: agenthub.federation.v1.CatalogEntry.bundle_digest:type_name -> agenthub.common.v1.Digest
+	28, // 11: agenthub.federation.v1.CatalogEntry.published_at:type_name -> google.protobuf.Timestamp
+	28, // 12: agenthub.federation.v1.Tombstone.at:type_name -> google.protobuf.Timestamp
 	11, // 13: agenthub.federation.v1.ListUpstreamsResponse.upstreams:type_name -> agenthub.federation.v1.Upstream
-	25, // 14: agenthub.federation.v1.Upstream.last_sync_at:type_name -> google.protobuf.Timestamp
+	28, // 14: agenthub.federation.v1.Upstream.last_sync_at:type_name -> google.protobuf.Timestamp
 	11, // 15: agenthub.federation.v1.UpsertUpstreamRequest.upstream:type_name -> agenthub.federation.v1.Upstream
 	11, // 16: agenthub.federation.v1.UpsertUpstreamResponse.upstream:type_name -> agenthub.federation.v1.Upstream
-	25, // 17: agenthub.federation.v1.TriggerSyncResponse.started_at:type_name -> google.protobuf.Timestamp
-	22, // 18: agenthub.federation.v1.ExportBundleRequest.bundle_digest:type_name -> agenthub.common.v1.Digest
-	22, // 19: agenthub.federation.v1.ImportBundleResponse.bundle_digest:type_name -> agenthub.common.v1.Digest
-	0,  // 20: agenthub.federation.v1.FederationService.GetHubInfo:input_type -> agenthub.federation.v1.GetHubInfoRequest
-	3,  // 21: agenthub.federation.v1.FederationService.GetSnapshot:input_type -> agenthub.federation.v1.GetSnapshotRequest
-	5,  // 22: agenthub.federation.v1.FederationService.SyncChanges:input_type -> agenthub.federation.v1.SyncChangesRequest
-	9,  // 23: agenthub.federation.v1.FederationService.ListUpstreams:input_type -> agenthub.federation.v1.ListUpstreamsRequest
-	12, // 24: agenthub.federation.v1.FederationService.UpsertUpstream:input_type -> agenthub.federation.v1.UpsertUpstreamRequest
-	14, // 25: agenthub.federation.v1.FederationService.DeleteUpstream:input_type -> agenthub.federation.v1.DeleteUpstreamRequest
-	16, // 26: agenthub.federation.v1.FederationService.TriggerSync:input_type -> agenthub.federation.v1.TriggerSyncRequest
-	18, // 27: agenthub.federation.v1.FederationService.ExportBundle:input_type -> agenthub.federation.v1.ExportBundleRequest
-	20, // 28: agenthub.federation.v1.FederationService.ImportBundle:input_type -> agenthub.federation.v1.ImportBundleRequest
-	1,  // 29: agenthub.federation.v1.FederationService.GetHubInfo:output_type -> agenthub.federation.v1.GetHubInfoResponse
-	4,  // 30: agenthub.federation.v1.FederationService.GetSnapshot:output_type -> agenthub.federation.v1.GetSnapshotResponse
-	6,  // 31: agenthub.federation.v1.FederationService.SyncChanges:output_type -> agenthub.federation.v1.SyncChangesResponse
-	10, // 32: agenthub.federation.v1.FederationService.ListUpstreams:output_type -> agenthub.federation.v1.ListUpstreamsResponse
-	13, // 33: agenthub.federation.v1.FederationService.UpsertUpstream:output_type -> agenthub.federation.v1.UpsertUpstreamResponse
-	15, // 34: agenthub.federation.v1.FederationService.DeleteUpstream:output_type -> agenthub.federation.v1.DeleteUpstreamResponse
-	17, // 35: agenthub.federation.v1.FederationService.TriggerSync:output_type -> agenthub.federation.v1.TriggerSyncResponse
-	19, // 36: agenthub.federation.v1.FederationService.ExportBundle:output_type -> agenthub.federation.v1.ExportBundleResponse
-	21, // 37: agenthub.federation.v1.FederationService.ImportBundle:output_type -> agenthub.federation.v1.ImportBundleResponse
-	29, // [29:38] is the sub-list for method output_type
-	20, // [20:29] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	28, // 17: agenthub.federation.v1.TriggerSyncResponse.started_at:type_name -> google.protobuf.Timestamp
+	25, // 18: agenthub.federation.v1.ExportBundleRequest.bundle_digest:type_name -> agenthub.common.v1.Digest
+	29, // 19: agenthub.federation.v1.ExportBundleRequest.ref:type_name -> agenthub.common.v1.AssetRef
+	29, // 20: agenthub.federation.v1.BundleHeader.ref:type_name -> agenthub.common.v1.AssetRef
+	25, // 21: agenthub.federation.v1.BundleHeader.manifest_digest:type_name -> agenthub.common.v1.Digest
+	25, // 22: agenthub.federation.v1.BundleHeader.bundle_digest:type_name -> agenthub.common.v1.Digest
+	30, // 23: agenthub.federation.v1.BundleHeader.status:type_name -> agenthub.common.v1.VersionStatus
+	28, // 24: agenthub.federation.v1.BundleHeader.published_at:type_name -> google.protobuf.Timestamp
+	20, // 25: agenthub.federation.v1.BundleHeader.files:type_name -> agenthub.federation.v1.BundleFile
+	31, // 26: agenthub.federation.v1.BundleFile.file:type_name -> agenthub.common.v1.FileDescriptor
+	19, // 27: agenthub.federation.v1.ExportBundleResponse.header:type_name -> agenthub.federation.v1.BundleHeader
+	21, // 28: agenthub.federation.v1.ExportBundleResponse.file:type_name -> agenthub.federation.v1.BundleFileChunk
+	19, // 29: agenthub.federation.v1.ImportBundleRequest.header:type_name -> agenthub.federation.v1.BundleHeader
+	21, // 30: agenthub.federation.v1.ImportBundleRequest.file:type_name -> agenthub.federation.v1.BundleFileChunk
+	25, // 31: agenthub.federation.v1.ImportBundleResponse.bundle_digest:type_name -> agenthub.common.v1.Digest
+	0,  // 32: agenthub.federation.v1.FederationService.GetHubInfo:input_type -> agenthub.federation.v1.GetHubInfoRequest
+	3,  // 33: agenthub.federation.v1.FederationService.GetSnapshot:input_type -> agenthub.federation.v1.GetSnapshotRequest
+	5,  // 34: agenthub.federation.v1.FederationService.SyncChanges:input_type -> agenthub.federation.v1.SyncChangesRequest
+	9,  // 35: agenthub.federation.v1.FederationService.ListUpstreams:input_type -> agenthub.federation.v1.ListUpstreamsRequest
+	12, // 36: agenthub.federation.v1.FederationService.UpsertUpstream:input_type -> agenthub.federation.v1.UpsertUpstreamRequest
+	14, // 37: agenthub.federation.v1.FederationService.DeleteUpstream:input_type -> agenthub.federation.v1.DeleteUpstreamRequest
+	16, // 38: agenthub.federation.v1.FederationService.TriggerSync:input_type -> agenthub.federation.v1.TriggerSyncRequest
+	18, // 39: agenthub.federation.v1.FederationService.ExportBundle:input_type -> agenthub.federation.v1.ExportBundleRequest
+	23, // 40: agenthub.federation.v1.FederationService.ImportBundle:input_type -> agenthub.federation.v1.ImportBundleRequest
+	1,  // 41: agenthub.federation.v1.FederationService.GetHubInfo:output_type -> agenthub.federation.v1.GetHubInfoResponse
+	4,  // 42: agenthub.federation.v1.FederationService.GetSnapshot:output_type -> agenthub.federation.v1.GetSnapshotResponse
+	6,  // 43: agenthub.federation.v1.FederationService.SyncChanges:output_type -> agenthub.federation.v1.SyncChangesResponse
+	10, // 44: agenthub.federation.v1.FederationService.ListUpstreams:output_type -> agenthub.federation.v1.ListUpstreamsResponse
+	13, // 45: agenthub.federation.v1.FederationService.UpsertUpstream:output_type -> agenthub.federation.v1.UpsertUpstreamResponse
+	15, // 46: agenthub.federation.v1.FederationService.DeleteUpstream:output_type -> agenthub.federation.v1.DeleteUpstreamResponse
+	17, // 47: agenthub.federation.v1.FederationService.TriggerSync:output_type -> agenthub.federation.v1.TriggerSyncResponse
+	22, // 48: agenthub.federation.v1.FederationService.ExportBundle:output_type -> agenthub.federation.v1.ExportBundleResponse
+	24, // 49: agenthub.federation.v1.FederationService.ImportBundle:output_type -> agenthub.federation.v1.ImportBundleResponse
+	41, // [41:50] is the sub-list for method output_type
+	32, // [32:41] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_agenthub_federation_v1_federation_proto_init() }
@@ -1544,13 +1987,21 @@ func file_agenthub_federation_v1_federation_proto_init() {
 	if File_agenthub_federation_v1_federation_proto != nil {
 		return
 	}
+	file_agenthub_federation_v1_federation_proto_msgTypes[22].OneofWrappers = []any{
+		(*ExportBundleResponse_Header)(nil),
+		(*ExportBundleResponse_File)(nil),
+	}
+	file_agenthub_federation_v1_federation_proto_msgTypes[23].OneofWrappers = []any{
+		(*ImportBundleRequest_Header)(nil),
+		(*ImportBundleRequest_File)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_agenthub_federation_v1_federation_proto_rawDesc), len(file_agenthub_federation_v1_federation_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   22,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

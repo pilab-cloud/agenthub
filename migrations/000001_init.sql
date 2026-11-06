@@ -96,7 +96,7 @@ CREATE TABLE agenthub.dependencies (
   target_ns   text NOT NULL,
   target_kind text NOT NULL,
   target_name text NOT NULL,
-  constraint  text NOT NULL,
+  "constraint"  text NOT NULL,
   PRIMARY KEY (version_id, kind, target_ns, target_kind, target_name)
 );
 

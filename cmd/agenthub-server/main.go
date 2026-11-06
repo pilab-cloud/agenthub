@@ -84,7 +84,11 @@ func newServeCmd() *cobra.Command {
 				}
 			}
 
-			m, err := metrics.New(cfg.Observability.MetricsEnabled)
+			m, err := metrics.New(metrics.Options{
+				Enabled:      cfg.Observability.MetricsEnabled,
+				OTelEndpoint: cfg.Observability.OTelEndpoint,
+				SampleRatio:  cfg.Observability.OTelSampleRatio,
+			})
 			if err != nil {
 				return err
 			}

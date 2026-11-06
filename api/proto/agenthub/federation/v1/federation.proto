@@ -136,18 +136,76 @@ message TriggerSyncResponse {
 }
 
 message ExportBundleRequest {
+  // bundle_digest selects a version by its bundle digest. ref takes
+  // precedence when both are set, and then the two must agree.
   agenthub.common.v1.Digest bundle_digest = 1;
+  // ref selects a version by identity; an empty version means the asset's
+  // latest published version.
+  agenthub.common.v1.AssetRef ref = 2;
+}
+
+// BundleHeader opens an ExportBundle/ImportBundle stream: everything needed
+// to recreate a version except the file bytes, which follow as
+// BundleFileChunk messages while the stream is open.
+message BundleHeader {
+  // ref identifies the version; hub is the id of the exporting hub.
+  agenthub.common.v1.AssetRef ref = 1;
+  agenthub.common.v1.Digest manifest_digest = 2;
+  agenthub.common.v1.Digest bundle_digest = 3;
+  uint64 bundle_size = 4;
+  agenthub.common.v1.VersionStatus status = 5;
+  google.protobuf.Timestamp published_at = 6;
+  bytes manifest = 7;
+  // files lists the files of the bundle; has_bytes tells whether the sender
+  // streams the file's content after this header.
+  repeated BundleFile files = 8;
+  string display_name = 9;
+  string summary = 10;
+  repeated string tags = 11;
+  repeated string categories = 12;
+  string license = 13;
+  string repository = 14;
+  string readme = 15;
+  string changelog = 16;
+}
+
+// BundleFile is one file of a bundle: the descriptor declared by the
+// manifest, plus whether the sending side holds the file's bytes.
+message BundleFile {
+  agenthub.common.v1.FileDescriptor file = 1;
+  bool has_bytes = 2;
+}
+
+// BundleFileChunk locates the bytes carried in the enclosing message's data
+// field within the file named by path.
+message BundleFileChunk {
+  string path = 1;
+  uint64 offset = 2;
 }
 
 message ExportBundleResponse {
+  // data carries the bytes of the chunk named by file. It is always empty
+  // in the header message.
   bytes data = 1;
+  oneof part {
+    BundleHeader header = 2;
+    BundleFileChunk file = 3;
+  }
 }
 
 message ImportBundleRequest {
+  // data carries the bytes of the chunk named by file. It is always empty
+  // in the header message.
   bytes data = 1;
+  oneof part {
+    BundleHeader header = 2;
+    BundleFileChunk file = 3;
+  }
 }
 
 message ImportBundleResponse {
   agenthub.common.v1.Digest bundle_digest = 1;
+  // bytes_written is the bundle content this import accepted: the manifest
+  // bytes plus every file byte stored.
   uint64 bytes_written = 2;
 }

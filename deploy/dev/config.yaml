@@ -4,7 +4,7 @@ server:
   http_addr: ":8080"
   grpc_addr: ":9090"
   metrics_addr: ":9100"
-  public_url: "http://localhost:8080"
+  public_url: "https://agenthub.pilab.hu"
   read_timeout: 10s
   write_timeout: 30s
   idle_timeout: 120s
@@ -13,7 +13,7 @@ server:
   trusted_proxies: ["127.0.0.1/32"]
 
 database:
-  dsn: "postgres://agenthub:agenthub@localhost:5432/agenthub?sslmode=disable"
+  dsn: "postgresql://agenthub:agenthub@localhost:5432/agenthub?sslmode=disable"
   max_open_conns: 20
   max_idle_conns: 10
   conn_max_lifetime: 30m
@@ -29,15 +29,15 @@ cache:
   kind: memory
 
 auth:
-  issuer: "http://localhost:8081"
+  issuer: "https://sso.pilab.hu"
   audience: agenthub
   audience_allowlist: ["agenthub"]
   client_id: "agenthub-web"
   # Keys the HMAC signing of the /auth/login and /session cookies (M3.5).
   # Dev-only value; production stores AGENTHUB_SESSION_SECRET in OpenBao.
   session_secret: "dev-only-session-secret-change-me-32b"
-  redirect_url: "http://localhost:8080/auth/callback"
-  post_logout_redirect_url: "http://localhost:8080/"
+  redirect_url: "https://agenthub.pilab.hu/auth/callback"
+  post_logout_redirect_url: "https://agenthub.pilab.hu/"
   scopes: ["openid", "profile", "email", "agenthub.read", "agenthub.publish", "agenthub.admin"]
 
 signing:
@@ -59,4 +59,4 @@ vault:
   address: "http://localhost:8200"
   path: "secret/data/AgentHub"
   token: "dev-root-token"
-  timeout: 15s
+

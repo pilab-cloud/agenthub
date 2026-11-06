@@ -4,7 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
-import type { AssetKind, Digest, Signature } from "../../common/v1/common_pb";
+import type { AssetKind, AssetRef, Digest, FileDescriptor, Signature, VersionStatus } from "../../common/v1/common_pb";
 import { file_agenthub_common_v1_common } from "../../common/v1/common_pb";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file agenthub/federation/v1/federation.proto.
  */
 export const file_agenthub_federation_v1_federation: GenFile = /*@__PURE__*/
-  fileDesc("CidhZ2VudGh1Yi9mZWRlcmF0aW9uL3YxL2ZlZGVyYXRpb24ucHJvdG8SFmFnZW50aHViLmZlZGVyYXRpb24udjEiEwoRR2V0SHViSW5mb1JlcXVlc3QiQgoSR2V0SHViSW5mb1Jlc3BvbnNlEiwKA2h1YhgBIAEoCzIfLmFnZW50aHViLmZlZGVyYXRpb24udjEuSHViSW5mbyJoCgdIdWJJbmZvEgoKAmlkGAEgASgJEhAKCGJhc2VfdXJsGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSEAoIcHJvdG9jb2wYBCABKA0SGQoRc2lnbmluZ19hbGdvcml0aG0YBSABKAkiKAoSR2V0U25hcHNob3RSZXF1ZXN0EhIKCm5hbWVzcGFjZXMYASADKAkiyQEKE0dldFNuYXBzaG90UmVzcG9uc2USEgoKZ2VuZXJhdGlvbhgBIAEoBBINCgVwYWdlcxgCIAEoDRITCgtlbnRyeV9jb3VudBgDIAEoBBIXCg90b21ic3RvbmVfY291bnQYBCABKAQSLwoLcm9vdF9kaWdlc3QYBSABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjAKCXNpZ25hdHVyZRgGIAEoCzIdLmFnZW50aHViLmNvbW1vbi52MS5TaWduYXR1cmUiXwoSU3luY0NoYW5nZXNSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCRINCgVsaW1pdBgCIAEoDRISCgpuYW1lc3BhY2VzGAMgAygJEhYKDmluY2x1ZGVfeWFua2VkGAQgASgIIs4CChNTeW5jQ2hhbmdlc1Jlc3BvbnNlEhIKCmdlbmVyYXRpb24YASABKAQSDAoEcGFnZRgCIAEoDRIvCgtwcmV2X2RpZ2VzdBgDIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSEwoLbmV4dF9jdXJzb3IYBCABKAkSNQoHZW50cmllcxgFIAMoCzIkLmFnZW50aHViLmZlZGVyYXRpb24udjEuQ2F0YWxvZ0VudHJ5EjUKCnRvbWJzdG9uZXMYBiADKAsyIS5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlRvbWJzdG9uZRIvCgtwYWdlX2RpZ2VzdBgHIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSMAoJc2lnbmF0dXJlGAggASgLMh0uYWdlbnRodWIuY29tbW9uLnYxLlNpZ25hdHVyZSKcAwoMQ2F0YWxvZ0VudHJ5EgoKAmlkGAEgASgJEisKBGtpbmQYAiABKA4yHS5hZ2VudGh1Yi5jb21tb24udjEuQXNzZXRLaW5kEhEKCW5hbWVzcGFjZRgDIAEoCRIMCgRuYW1lGAQgASgJEg8KB3ZlcnNpb24YBSABKAkSEgoKb3JpZ2luX2h1YhgGIAEoCRIZChFvcmlnaW5fdmVyc2lvbl9pZBgHIAEoCRIzCg9tYW5pZmVzdF9kaWdlc3QYCCABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjEKDWJ1bmRsZV9kaWdlc3QYCSABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjAKDHB1Ymxpc2hlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDgoGc3RhdHVzGAsgASgJEhgKEHB1Ymxpc2hlcl9rZXlfaWQYDCABKAkSEgoKcmlza19jbGFzcxgNIAEoCRIMCgRzaXplGA4gASgEEgwKBHRhZ3MYDyADKAkiYAoJVG9tYnN0b25lEgoKAmlkGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSDgoGcmVhc29uGAMgASgJEiYKAmF0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIWChRMaXN0VXBzdHJlYW1zUmVxdWVzdCJMChVMaXN0VXBzdHJlYW1zUmVzcG9uc2USMwoJdXBzdHJlYW1zGAEgAygLMiAuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5VcHN0cmVhbSKkAQoIVXBzdHJlYW0SCgoCaWQYASABKAkSFQoNcmVtb3RlX2h1Yl9pZBgCIAEoCRIQCghiYXNlX3VybBgDIAEoCRIMCgRtb2RlGAQgASgJEg4KBnN0YXR1cxgFIAEoCRITCgtzeW5jX2N1cnNvchgGIAEoCRIwCgxsYXN0X3N5bmNfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIksKFVVwc2VydFVwc3RyZWFtUmVxdWVzdBIyCgh1cHN0cmVhbRgBIAEoCzIgLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzdHJlYW0iTAoWVXBzZXJ0VXBzdHJlYW1SZXNwb25zZRIyCgh1cHN0cmVhbRgBIAEoCzIgLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzdHJlYW0iIwoVRGVsZXRlVXBzdHJlYW1SZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkRlbGV0ZVVwc3RyZWFtUmVzcG9uc2UiKQoSVHJpZ2dlclN5bmNSZXF1ZXN0EhMKC3Vwc3RyZWFtX2lkGAEgASgJIlUKE1RyaWdnZXJTeW5jUmVzcG9uc2USDgoGcnVuX2lkGAEgASgJEi4KCnN0YXJ0ZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkgKE0V4cG9ydEJ1bmRsZVJlcXVlc3QSMQoNYnVuZGxlX2RpZ2VzdBgBIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QiJAoURXhwb3J0QnVuZGxlUmVzcG9uc2USDAoEZGF0YRgBIAEoDCIjChNJbXBvcnRCdW5kbGVSZXF1ZXN0EgwKBGRhdGEYASABKAwiYAoUSW1wb3J0QnVuZGxlUmVzcG9uc2USMQoNYnVuZGxlX2RpZ2VzdBgBIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSFQoNYnl0ZXNfd3JpdHRlbhgCIAEoBDLaBwoRRmVkZXJhdGlvblNlcnZpY2USYwoKR2V0SHViSW5mbxIpLmFnZW50aHViLmZlZGVyYXRpb24udjEuR2V0SHViSW5mb1JlcXVlc3QaKi5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkdldEh1YkluZm9SZXNwb25zZRJmCgtHZXRTbmFwc2hvdBIqLmFnZW50aHViLmZlZGVyYXRpb24udjEuR2V0U25hcHNob3RSZXF1ZXN0GisuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5HZXRTbmFwc2hvdFJlc3BvbnNlEmYKC1N5bmNDaGFuZ2VzEiouYWdlbnRodWIuZmVkZXJhdGlvbi52MS5TeW5jQ2hhbmdlc1JlcXVlc3QaKy5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlN5bmNDaGFuZ2VzUmVzcG9uc2USbAoNTGlzdFVwc3RyZWFtcxIsLmFnZW50aHViLmZlZGVyYXRpb24udjEuTGlzdFVwc3RyZWFtc1JlcXVlc3QaLS5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkxpc3RVcHN0cmVhbXNSZXNwb25zZRJvCg5VcHNlcnRVcHN0cmVhbRItLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzZXJ0VXBzdHJlYW1SZXF1ZXN0Gi4uYWdlbnRodWIuZmVkZXJhdGlvbi52MS5VcHNlcnRVcHN0cmVhbVJlc3BvbnNlEm8KDkRlbGV0ZVVwc3RyZWFtEi0uYWdlbnRodWIuZmVkZXJhdGlvbi52MS5EZWxldGVVcHN0cmVhbVJlcXVlc3QaLi5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkRlbGV0ZVVwc3RyZWFtUmVzcG9uc2USZgoLVHJpZ2dlclN5bmMSKi5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlRyaWdnZXJTeW5jUmVxdWVzdBorLmFnZW50aHViLmZlZGVyYXRpb24udjEuVHJpZ2dlclN5bmNSZXNwb25zZRJrCgxFeHBvcnRCdW5kbGUSKy5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkV4cG9ydEJ1bmRsZVJlcXVlc3QaLC5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkV4cG9ydEJ1bmRsZVJlc3BvbnNlMAESawoMSW1wb3J0QnVuZGxlEisuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5JbXBvcnRCdW5kbGVSZXF1ZXN0GiwuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5JbXBvcnRCdW5kbGVSZXNwb25zZSgBQugBChpjb20uYWdlbnRodWIuZmVkZXJhdGlvbi52MUIPRmVkZXJhdGlvblByb3RvUAFaP2dvLnBpbGFiLmh1L2FnZW50aHViL2dlbi9nby9hZ2VudGh1Yi9mZWRlcmF0aW9uL3YxO2ZlZGVyYXRpb252MaICA0FGWKoCFkFnZW50aHViLkZlZGVyYXRpb24uVjHKAhZBZ2VudGh1YlxGZWRlcmF0aW9uXFYx4gIiQWdlbnRodWJcRmVkZXJhdGlvblxWMVxHUEJNZXRhZGF0YeoCGEFnZW50aHViOjpGZWRlcmF0aW9uOjpWMWIGcHJvdG8z", [file_agenthub_common_v1_common, file_google_protobuf_timestamp]);
+  fileDesc("CidhZ2VudGh1Yi9mZWRlcmF0aW9uL3YxL2ZlZGVyYXRpb24ucHJvdG8SFmFnZW50aHViLmZlZGVyYXRpb24udjEiEwoRR2V0SHViSW5mb1JlcXVlc3QiQgoSR2V0SHViSW5mb1Jlc3BvbnNlEiwKA2h1YhgBIAEoCzIfLmFnZW50aHViLmZlZGVyYXRpb24udjEuSHViSW5mbyJoCgdIdWJJbmZvEgoKAmlkGAEgASgJEhAKCGJhc2VfdXJsGAIgASgJEhIKCnB1YmxpY19rZXkYAyABKAwSEAoIcHJvdG9jb2wYBCABKA0SGQoRc2lnbmluZ19hbGdvcml0aG0YBSABKAkiKAoSR2V0U25hcHNob3RSZXF1ZXN0EhIKCm5hbWVzcGFjZXMYASADKAkiyQEKE0dldFNuYXBzaG90UmVzcG9uc2USEgoKZ2VuZXJhdGlvbhgBIAEoBBINCgVwYWdlcxgCIAEoDRITCgtlbnRyeV9jb3VudBgDIAEoBBIXCg90b21ic3RvbmVfY291bnQYBCABKAQSLwoLcm9vdF9kaWdlc3QYBSABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjAKCXNpZ25hdHVyZRgGIAEoCzIdLmFnZW50aHViLmNvbW1vbi52MS5TaWduYXR1cmUiXwoSU3luY0NoYW5nZXNSZXF1ZXN0Eg4KBmN1cnNvchgBIAEoCRINCgVsaW1pdBgCIAEoDRISCgpuYW1lc3BhY2VzGAMgAygJEhYKDmluY2x1ZGVfeWFua2VkGAQgASgIIs4CChNTeW5jQ2hhbmdlc1Jlc3BvbnNlEhIKCmdlbmVyYXRpb24YASABKAQSDAoEcGFnZRgCIAEoDRIvCgtwcmV2X2RpZ2VzdBgDIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSEwoLbmV4dF9jdXJzb3IYBCABKAkSNQoHZW50cmllcxgFIAMoCzIkLmFnZW50aHViLmZlZGVyYXRpb24udjEuQ2F0YWxvZ0VudHJ5EjUKCnRvbWJzdG9uZXMYBiADKAsyIS5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlRvbWJzdG9uZRIvCgtwYWdlX2RpZ2VzdBgHIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSMAoJc2lnbmF0dXJlGAggASgLMh0uYWdlbnRodWIuY29tbW9uLnYxLlNpZ25hdHVyZSKcAwoMQ2F0YWxvZ0VudHJ5EgoKAmlkGAEgASgJEisKBGtpbmQYAiABKA4yHS5hZ2VudGh1Yi5jb21tb24udjEuQXNzZXRLaW5kEhEKCW5hbWVzcGFjZRgDIAEoCRIMCgRuYW1lGAQgASgJEg8KB3ZlcnNpb24YBSABKAkSEgoKb3JpZ2luX2h1YhgGIAEoCRIZChFvcmlnaW5fdmVyc2lvbl9pZBgHIAEoCRIzCg9tYW5pZmVzdF9kaWdlc3QYCCABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjEKDWJ1bmRsZV9kaWdlc3QYCSABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EjAKDHB1Ymxpc2hlZF9hdBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDgoGc3RhdHVzGAsgASgJEhgKEHB1Ymxpc2hlcl9rZXlfaWQYDCABKAkSEgoKcmlza19jbGFzcxgNIAEoCRIMCgRzaXplGA4gASgEEgwKBHRhZ3MYDyADKAkiYAoJVG9tYnN0b25lEgoKAmlkGAEgASgJEg8KB3ZlcnNpb24YAiABKAkSDgoGcmVhc29uGAMgASgJEiYKAmF0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIWChRMaXN0VXBzdHJlYW1zUmVxdWVzdCJMChVMaXN0VXBzdHJlYW1zUmVzcG9uc2USMwoJdXBzdHJlYW1zGAEgAygLMiAuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5VcHN0cmVhbSKkAQoIVXBzdHJlYW0SCgoCaWQYASABKAkSFQoNcmVtb3RlX2h1Yl9pZBgCIAEoCRIQCghiYXNlX3VybBgDIAEoCRIMCgRtb2RlGAQgASgJEg4KBnN0YXR1cxgFIAEoCRITCgtzeW5jX2N1cnNvchgGIAEoCRIwCgxsYXN0X3N5bmNfYXQYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIksKFVVwc2VydFVwc3RyZWFtUmVxdWVzdBIyCgh1cHN0cmVhbRgBIAEoCzIgLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzdHJlYW0iTAoWVXBzZXJ0VXBzdHJlYW1SZXNwb25zZRIyCgh1cHN0cmVhbRgBIAEoCzIgLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzdHJlYW0iIwoVRGVsZXRlVXBzdHJlYW1SZXF1ZXN0EgoKAmlkGAEgASgJIhgKFkRlbGV0ZVVwc3RyZWFtUmVzcG9uc2UiKQoSVHJpZ2dlclN5bmNSZXF1ZXN0EhMKC3Vwc3RyZWFtX2lkGAEgASgJIlUKE1RyaWdnZXJTeW5jUmVzcG9uc2USDgoGcnVuX2lkGAEgASgJEi4KCnN0YXJ0ZWRfYXQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInMKE0V4cG9ydEJ1bmRsZVJlcXVlc3QSMQoNYnVuZGxlX2RpZ2VzdBgBIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSKQoDcmVmGAIgASgLMhwuYWdlbnRodWIuY29tbW9uLnYxLkFzc2V0UmVmIvEDCgxCdW5kbGVIZWFkZXISKQoDcmVmGAEgASgLMhwuYWdlbnRodWIuY29tbW9uLnYxLkFzc2V0UmVmEjMKD21hbmlmZXN0X2RpZ2VzdBgCIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSMQoNYnVuZGxlX2RpZ2VzdBgDIAEoCzIaLmFnZW50aHViLmNvbW1vbi52MS5EaWdlc3QSEwoLYnVuZGxlX3NpemUYBCABKAQSMQoGc3RhdHVzGAUgASgOMiEuYWdlbnRodWIuY29tbW9uLnYxLlZlcnNpb25TdGF0dXMSMAoMcHVibGlzaGVkX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIQCghtYW5pZmVzdBgHIAEoDBIxCgVmaWxlcxgIIAMoCzIiLmFnZW50aHViLmZlZGVyYXRpb24udjEuQnVuZGxlRmlsZRIUCgxkaXNwbGF5X25hbWUYCSABKAkSDwoHc3VtbWFyeRgKIAEoCRIMCgR0YWdzGAsgAygJEhIKCmNhdGVnb3JpZXMYDCADKAkSDwoHbGljZW5zZRgNIAEoCRISCgpyZXBvc2l0b3J5GA4gASgJEg4KBnJlYWRtZRgPIAEoCRIRCgljaGFuZ2Vsb2cYECABKAkiUQoKQnVuZGxlRmlsZRIwCgRmaWxlGAEgASgLMiIuYWdlbnRodWIuY29tbW9uLnYxLkZpbGVEZXNjcmlwdG9yEhEKCWhhc19ieXRlcxgCIAEoCCIvCg9CdW5kbGVGaWxlQ2h1bmsSDAoEcGF0aBgBIAEoCRIOCgZvZmZzZXQYAiABKAQinQEKFEV4cG9ydEJ1bmRsZVJlc3BvbnNlEgwKBGRhdGEYASABKAwSNgoGaGVhZGVyGAIgASgLMiQuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5CdW5kbGVIZWFkZXJIABI3CgRmaWxlGAMgASgLMicuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5CdW5kbGVGaWxlQ2h1bmtIAEIGCgRwYXJ0IpwBChNJbXBvcnRCdW5kbGVSZXF1ZXN0EgwKBGRhdGEYASABKAwSNgoGaGVhZGVyGAIgASgLMiQuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5CdW5kbGVIZWFkZXJIABI3CgRmaWxlGAMgASgLMicuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5CdW5kbGVGaWxlQ2h1bmtIAEIGCgRwYXJ0ImAKFEltcG9ydEJ1bmRsZVJlc3BvbnNlEjEKDWJ1bmRsZV9kaWdlc3QYASABKAsyGi5hZ2VudGh1Yi5jb21tb24udjEuRGlnZXN0EhUKDWJ5dGVzX3dyaXR0ZW4YAiABKAQy2gcKEUZlZGVyYXRpb25TZXJ2aWNlEmMKCkdldEh1YkluZm8SKS5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkdldEh1YkluZm9SZXF1ZXN0GiouYWdlbnRodWIuZmVkZXJhdGlvbi52MS5HZXRIdWJJbmZvUmVzcG9uc2USZgoLR2V0U25hcHNob3QSKi5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkdldFNuYXBzaG90UmVxdWVzdBorLmFnZW50aHViLmZlZGVyYXRpb24udjEuR2V0U25hcHNob3RSZXNwb25zZRJmCgtTeW5jQ2hhbmdlcxIqLmFnZW50aHViLmZlZGVyYXRpb24udjEuU3luY0NoYW5nZXNSZXF1ZXN0GisuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5TeW5jQ2hhbmdlc1Jlc3BvbnNlEmwKDUxpc3RVcHN0cmVhbXMSLC5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLkxpc3RVcHN0cmVhbXNSZXF1ZXN0Gi0uYWdlbnRodWIuZmVkZXJhdGlvbi52MS5MaXN0VXBzdHJlYW1zUmVzcG9uc2USbwoOVXBzZXJ0VXBzdHJlYW0SLS5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlVwc2VydFVwc3RyZWFtUmVxdWVzdBouLmFnZW50aHViLmZlZGVyYXRpb24udjEuVXBzZXJ0VXBzdHJlYW1SZXNwb25zZRJvCg5EZWxldGVVcHN0cmVhbRItLmFnZW50aHViLmZlZGVyYXRpb24udjEuRGVsZXRlVXBzdHJlYW1SZXF1ZXN0Gi4uYWdlbnRodWIuZmVkZXJhdGlvbi52MS5EZWxldGVVcHN0cmVhbVJlc3BvbnNlEmYKC1RyaWdnZXJTeW5jEiouYWdlbnRodWIuZmVkZXJhdGlvbi52MS5UcmlnZ2VyU3luY1JlcXVlc3QaKy5hZ2VudGh1Yi5mZWRlcmF0aW9uLnYxLlRyaWdnZXJTeW5jUmVzcG9uc2USawoMRXhwb3J0QnVuZGxlEisuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5FeHBvcnRCdW5kbGVSZXF1ZXN0GiwuYWdlbnRodWIuZmVkZXJhdGlvbi52MS5FeHBvcnRCdW5kbGVSZXNwb25zZTABEmsKDEltcG9ydEJ1bmRsZRIrLmFnZW50aHViLmZlZGVyYXRpb24udjEuSW1wb3J0QnVuZGxlUmVxdWVzdBosLmFnZW50aHViLmZlZGVyYXRpb24udjEuSW1wb3J0QnVuZGxlUmVzcG9uc2UoAULoAQoaY29tLmFnZW50aHViLmZlZGVyYXRpb24udjFCD0ZlZGVyYXRpb25Qcm90b1ABWj9nby5waWxhYi5odS9hZ2VudGh1Yi9nZW4vZ28vYWdlbnRodWIvZmVkZXJhdGlvbi92MTtmZWRlcmF0aW9udjGiAgNBRliqAhZBZ2VudGh1Yi5GZWRlcmF0aW9uLlYxygIWQWdlbnRodWJcRmVkZXJhdGlvblxWMeICIkFnZW50aHViXEZlZGVyYXRpb25cVjFcR1BCTWV0YWRhdGHqAhhBZ2VudGh1Yjo6RmVkZXJhdGlvbjo6VjFiBnByb3RvMw", [file_agenthub_common_v1_common, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message agenthub.federation.v1.GetHubInfoRequest
@@ -543,9 +543,20 @@ export const TriggerSyncResponseSchema: GenMessage<TriggerSyncResponse> = /*@__P
  */
 export type ExportBundleRequest = Message<"agenthub.federation.v1.ExportBundleRequest"> & {
   /**
+   * bundle_digest selects a version by its bundle digest. ref takes
+   * precedence when both are set, and then the two must agree.
+   *
    * @generated from field: agenthub.common.v1.Digest bundle_digest = 1;
    */
   bundleDigest?: Digest | undefined;
+
+  /**
+   * ref selects a version by identity; an empty version means the asset's
+   * latest published version.
+   *
+   * @generated from field: agenthub.common.v1.AssetRef ref = 2;
+   */
+  ref?: AssetRef | undefined;
 };
 
 /**
@@ -556,13 +567,184 @@ export const ExportBundleRequestSchema: GenMessage<ExportBundleRequest> = /*@__P
   messageDesc(file_agenthub_federation_v1_federation, 18);
 
 /**
+ * BundleHeader opens an ExportBundle/ImportBundle stream: everything needed
+ * to recreate a version except the file bytes, which follow as
+ * BundleFileChunk messages while the stream is open.
+ *
+ * @generated from message agenthub.federation.v1.BundleHeader
+ */
+export type BundleHeader = Message<"agenthub.federation.v1.BundleHeader"> & {
+  /**
+   * ref identifies the version; hub is the id of the exporting hub.
+   *
+   * @generated from field: agenthub.common.v1.AssetRef ref = 1;
+   */
+  ref?: AssetRef | undefined;
+
+  /**
+   * @generated from field: agenthub.common.v1.Digest manifest_digest = 2;
+   */
+  manifestDigest?: Digest | undefined;
+
+  /**
+   * @generated from field: agenthub.common.v1.Digest bundle_digest = 3;
+   */
+  bundleDigest?: Digest | undefined;
+
+  /**
+   * @generated from field: uint64 bundle_size = 4;
+   */
+  bundleSize: bigint;
+
+  /**
+   * @generated from field: agenthub.common.v1.VersionStatus status = 5;
+   */
+  status: VersionStatus;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp published_at = 6;
+   */
+  publishedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bytes manifest = 7;
+   */
+  manifest: Uint8Array;
+
+  /**
+   * files lists the files of the bundle; has_bytes tells whether the sender
+   * streams the file's content after this header.
+   *
+   * @generated from field: repeated agenthub.federation.v1.BundleFile files = 8;
+   */
+  files: BundleFile[];
+
+  /**
+   * @generated from field: string display_name = 9;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: string summary = 10;
+   */
+  summary: string;
+
+  /**
+   * @generated from field: repeated string tags = 11;
+   */
+  tags: string[];
+
+  /**
+   * @generated from field: repeated string categories = 12;
+   */
+  categories: string[];
+
+  /**
+   * @generated from field: string license = 13;
+   */
+  license: string;
+
+  /**
+   * @generated from field: string repository = 14;
+   */
+  repository: string;
+
+  /**
+   * @generated from field: string readme = 15;
+   */
+  readme: string;
+
+  /**
+   * @generated from field: string changelog = 16;
+   */
+  changelog: string;
+};
+
+/**
+ * Describes the message agenthub.federation.v1.BundleHeader.
+ * Use `create(BundleHeaderSchema)` to create a new message.
+ */
+export const BundleHeaderSchema: GenMessage<BundleHeader> = /*@__PURE__*/
+  messageDesc(file_agenthub_federation_v1_federation, 19);
+
+/**
+ * BundleFile is one file of a bundle: the descriptor declared by the
+ * manifest, plus whether the sending side holds the file's bytes.
+ *
+ * @generated from message agenthub.federation.v1.BundleFile
+ */
+export type BundleFile = Message<"agenthub.federation.v1.BundleFile"> & {
+  /**
+   * @generated from field: agenthub.common.v1.FileDescriptor file = 1;
+   */
+  file?: FileDescriptor | undefined;
+
+  /**
+   * @generated from field: bool has_bytes = 2;
+   */
+  hasBytes: boolean;
+};
+
+/**
+ * Describes the message agenthub.federation.v1.BundleFile.
+ * Use `create(BundleFileSchema)` to create a new message.
+ */
+export const BundleFileSchema: GenMessage<BundleFile> = /*@__PURE__*/
+  messageDesc(file_agenthub_federation_v1_federation, 20);
+
+/**
+ * BundleFileChunk locates the bytes carried in the enclosing message's data
+ * field within the file named by path.
+ *
+ * @generated from message agenthub.federation.v1.BundleFileChunk
+ */
+export type BundleFileChunk = Message<"agenthub.federation.v1.BundleFileChunk"> & {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path: string;
+
+  /**
+   * @generated from field: uint64 offset = 2;
+   */
+  offset: bigint;
+};
+
+/**
+ * Describes the message agenthub.federation.v1.BundleFileChunk.
+ * Use `create(BundleFileChunkSchema)` to create a new message.
+ */
+export const BundleFileChunkSchema: GenMessage<BundleFileChunk> = /*@__PURE__*/
+  messageDesc(file_agenthub_federation_v1_federation, 21);
+
+/**
  * @generated from message agenthub.federation.v1.ExportBundleResponse
  */
 export type ExportBundleResponse = Message<"agenthub.federation.v1.ExportBundleResponse"> & {
   /**
+   * data carries the bytes of the chunk named by file. It is always empty
+   * in the header message.
+   *
    * @generated from field: bytes data = 1;
    */
   data: Uint8Array;
+
+  /**
+   * @generated from oneof agenthub.federation.v1.ExportBundleResponse.part
+   */
+  part: {
+    /**
+     * @generated from field: agenthub.federation.v1.BundleHeader header = 2;
+     */
+    value: BundleHeader;
+    case: "header";
+  } | {
+    /**
+     * @generated from field: agenthub.federation.v1.BundleFileChunk file = 3;
+     */
+    value: BundleFileChunk;
+    case: "file";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -570,16 +752,36 @@ export type ExportBundleResponse = Message<"agenthub.federation.v1.ExportBundleR
  * Use `create(ExportBundleResponseSchema)` to create a new message.
  */
 export const ExportBundleResponseSchema: GenMessage<ExportBundleResponse> = /*@__PURE__*/
-  messageDesc(file_agenthub_federation_v1_federation, 19);
+  messageDesc(file_agenthub_federation_v1_federation, 22);
 
 /**
  * @generated from message agenthub.federation.v1.ImportBundleRequest
  */
 export type ImportBundleRequest = Message<"agenthub.federation.v1.ImportBundleRequest"> & {
   /**
+   * data carries the bytes of the chunk named by file. It is always empty
+   * in the header message.
+   *
    * @generated from field: bytes data = 1;
    */
   data: Uint8Array;
+
+  /**
+   * @generated from oneof agenthub.federation.v1.ImportBundleRequest.part
+   */
+  part: {
+    /**
+     * @generated from field: agenthub.federation.v1.BundleHeader header = 2;
+     */
+    value: BundleHeader;
+    case: "header";
+  } | {
+    /**
+     * @generated from field: agenthub.federation.v1.BundleFileChunk file = 3;
+     */
+    value: BundleFileChunk;
+    case: "file";
+  } | { case: undefined; value?: undefined };
 };
 
 /**
@@ -587,7 +789,7 @@ export type ImportBundleRequest = Message<"agenthub.federation.v1.ImportBundleRe
  * Use `create(ImportBundleRequestSchema)` to create a new message.
  */
 export const ImportBundleRequestSchema: GenMessage<ImportBundleRequest> = /*@__PURE__*/
-  messageDesc(file_agenthub_federation_v1_federation, 20);
+  messageDesc(file_agenthub_federation_v1_federation, 23);
 
 /**
  * @generated from message agenthub.federation.v1.ImportBundleResponse
@@ -599,6 +801,9 @@ export type ImportBundleResponse = Message<"agenthub.federation.v1.ImportBundleR
   bundleDigest?: Digest | undefined;
 
   /**
+   * bytes_written is the bundle content this import accepted: the manifest
+   * bytes plus every file byte stored.
+   *
    * @generated from field: uint64 bytes_written = 2;
    */
   bytesWritten: bigint;
@@ -609,7 +814,7 @@ export type ImportBundleResponse = Message<"agenthub.federation.v1.ImportBundleR
  * Use `create(ImportBundleResponseSchema)` to create a new message.
  */
 export const ImportBundleResponseSchema: GenMessage<ImportBundleResponse> = /*@__PURE__*/
-  messageDesc(file_agenthub_federation_v1_federation, 21);
+  messageDesc(file_agenthub_federation_v1_federation, 24);
 
 /**
  * FederationService serves server-to-server and admin operations: hub

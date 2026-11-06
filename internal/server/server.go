@@ -83,6 +83,7 @@ func New(cfg *config.Config, database *bun.DB, m *metrics.Metrics, w *web.Handle
 		e.GET("/ns/:slug", w.Namespace)
 		e.GET("/a/:ns/:kind/:name", w.Asset)
 		e.GET("/a/:ns/:kind/:name/:version", w.Version)
+		e.POST("/dashboard/:namespace/:kind/:name/publish", w.PublishDraft)
 	}
 	e.StaticFS("/static", web.StaticFS())
 
