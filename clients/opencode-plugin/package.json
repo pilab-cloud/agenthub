@@ -1,0 +1,21 @@
+{
+  "name": "@pilab/opencode-agenthub",
+  "version": "0.1.0",
+  "description": "AgentHub V2 adapter for OpenCode",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "connectrpc/connect": "^1.21.1",
+    "tslib": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "vitest": "^2.0.0",
+    "typescript": "^5.6.0"
+  }
+}

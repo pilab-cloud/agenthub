@@ -1,0 +1,22 @@
+{
+  "name": "@pilab/opencode-agenthub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AgentHub OpenCode V2 plugin: registers assets pinned in agenthub.lock.json (M2.5 minimal).",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "build": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "typescript": "^5.9.3"
+  }
+}
