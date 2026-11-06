@@ -557,6 +557,7 @@ Detailed delivery slices and test strategy: [operations.md](docs/architecture/op
 | D15 | Web authoring uses opt-in hosted signing keys | Immediate publish from the dashboard without putting publisher keys in every browser; default remains CLI/CI client signing | Hosted custody is not acceptable for a namespace |
 | D16 | Landing page shows newest published public agents | Creation must become visible without manual curation; drafts and private assets stay hidden | Editorial-only landing is required |
 | D17 | One BFF OIDC client for frontend and backend | The server performs the code exchange; browser never holds tokens; matches the PiMail BFF pattern | The dashboard is split into a separate SPA |
+| D18 | M1 ships handlers against an in-memory `Store` interface first | Faster iteration and testable without Postgres; handlers stay unchanged when Postgres repos land in M1.7 | Persistence or multi-instance correctness becomes a blocker |
 
 ---
 

@@ -279,6 +279,26 @@ active. There is no partial import.
 - A mirror never deletes a local blob while any local lockfile or retention
   window references it. Tombstones stop *new* resolutions, not existing pins.
 
+### 4.5 Implementation notes (M4.1)
+
+The server-side `GetSnapshot`/`SyncChanges` shipped in M4.1 follow this
+document with two deliberate simplifications, both documented in the
+handler (`internal/api/federation.go`):
+
+- `pageDigest` and `rootDigest` are the SHA-256 of the canonical change-log
+  document `{"hub":…,"items":[…]}` through the end of the page (and of the
+  whole log, for the snapshot) instead of the page document and the concat
+  of fixed-size page digests. The chain stays valid for any `limit` the peer
+  asks for: the next page's `prevDigest` equals this page's `pageDigest`, and
+  a fully paged walk ends on `pageDigest == rootDigest`.
+- Canonical JSON is Go's `encoding/json` with HTML escaping disabled over
+  fixed-layout structs (declaration order), not RFC 8785 JCS.
+
+`generation` is an in-process monotonic counter over the digest of the
+unfiltered catalog: it advances only when the catalog changes, so cursors
+stay valid across calls and a restart makes every outstanding cursor look
+stale (the peer re-bootstraps).
+
 ---
 
 ## 5. Federation modes
