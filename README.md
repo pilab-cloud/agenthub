@@ -10,9 +10,11 @@ plugin install and run them from any machine.
 - OpenCode plugin: `@pilab/opencode-agenthub`
 - CLI binary: `agenthub`
 
-> **Status:** M0 skeleton provisioned. The server, CLI, buf modules, migrations,
-> health endpoints, metrics and CI/Docker scaffolding are in place; the catalog,
-> registry, federation and identity RPCs are stubbed and filled in during M1+.
+> **Status:** Milestones M0–M4 and the first M5 slice are implemented (see
+> [ROADMAP.md](ROADMAP.md)): registry, catalog, publish/sign, federation, auth
+> and the CLI (`install`, `update`, `remove`, `export`, `import`, `federate`,
+> `sync`, `materialize`). Stores are in-memory; `GetBundle`, `GetInstallGuide`,
+> `WatchCatalog` and the yank/deprecate RPCs are still unimplemented.
 
 ## What AgentHub is
 
