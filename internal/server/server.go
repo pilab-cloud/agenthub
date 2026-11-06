@@ -105,11 +105,12 @@ func New(cfg *config.Config, database *bun.DB, m *metrics.Metrics, w *web.Handle
 		w.CatalogStore = catStore
 		w.BlobStore = blobs
 	}
-	catalogH := api.NewCatalogWithStore(catStore)
+	catalogH := api.NewCatalogWithStore(catStore).WithBlobs(blobs, cfg.Server.PublicURL)
 	// M3.6: role bindings are persisted in agenthub.namespace_roles when a
 	// database is configured, in-memory otherwise. M3.4: the registry shares
 	// the audit store with the rate limiter above.
-	registryH := api.NewRegistryWithAudit(regStore, catStore, newRoleStore(database), hubID, auditStore)
+	registryH := api.NewRegistryWithAudit(regStore, catStore, newRoleStore(database), hubID, auditStore).
+		WithBlobs(blobs, cfg.Server.PublicURL)
 	// M4.1: the federation handler signs snapshots and sync pages with the
 	// hub key (signing.hub_key_path, ephemeral in development) and reads the
 	// same catalog store the CatalogService serves.
@@ -136,6 +137,9 @@ func New(cfg *config.Config, database *bun.DB, m *metrics.Metrics, w *web.Handle
 	mount(fp, fh)
 	ip, ih := identityv1connect.NewIdentityServiceHandler(identityH)
 	mount(ip, ih)
+
+	e.GET(api.BlobPath+":sha", getBlob(blobs))
+	e.PUT(api.BlobPath+":sha", putBlob(blobs, cfg.Server.MaxRequestBytes))
 
 	e.GET("/.well-known/agenthub.json", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]any{

@@ -1053,6 +1053,13 @@ Checks: `gofumpt`, `golangci-lint` (0 issues), `go vet`, `go test -race`, `buf l
 - `cmd/agenthub/wizard.go`: bubbletea wizard (targets, location, confirm).
 - `cmd/agenthub/install_cmd.go`: `-t/-l/-y/--print-config/--refresh/--force`; fetch step runs first.
 
+### Slice 4 — integration suite (done)
+
+- `test/integration/`: builds the real `agenthub` binary and runs it against an in-process hub (`server.New` over HTTP): publish, blob upload/download, `GetBundle`, `add`/`install`/`update`/`remove`, all five harnesses, drift/`--force`, `--refresh`, offline/frozen, exit codes.
+- Server: `PUT/GET /blobs/<sha256>`, upload targets from `BeginPublish`, `GetBundle`, semver-constraint `Resolve`.
+- Fixed: `BeginPublish`/`CommitPublish` had no role check; the catalog page crashed on `.Verified`.
+- Known gap: the `/ns/<slug>` page does not list the namespace's assets.
+
 ### Remaining M5 work (out of scope for this session)
 
 - M5.2: ratings/recommendations (no proto surface yet).

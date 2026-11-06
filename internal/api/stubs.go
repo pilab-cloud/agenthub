@@ -41,7 +41,9 @@ func unimplemented(rpc string) error {
 // Catalog is the CatalogService handler.
 type Catalog struct {
 	catalogv1connect.UnimplementedCatalogServiceHandler
-	store catalog.Store
+	store     catalog.Store
+	blobs     catalog.BlobStore
+	publicURL string
 }
 
 // NewCatalog builds a Catalog backed by an in-memory store.
@@ -207,11 +209,7 @@ func (c *Catalog) Resolve(ctx context.Context, req *connect.Request[catalogv1.Re
 			})
 			continue
 		}
-		version := ref.Version
-		if version == "" {
-			version = a.LatestVer
-		}
-		v, ok := c.store.GetVersion(ref.Namespace, ref.Kind, ref.Name, version)
+		v, ok := c.pickVersion(a, ref.Version)
 		if !ok {
 			resp.Warnings = append(resp.Warnings, &catalogv1.ResolutionWarning{
 				Code:    "not_found",
@@ -236,10 +234,6 @@ func (c *Catalog) Resolve(ctx context.Context, req *connect.Request[catalogv1.Re
 		resp.Assets = append(resp.Assets, ra)
 	}
 	return connect.NewResponse(resp), nil
-}
-
-func (c *Catalog) GetBundle(ctx context.Context, req *connect.Request[catalogv1.GetBundleRequest]) (*connect.Response[catalogv1.GetBundleResponse], error) {
-	return nil, unimplemented("GetBundle")
 }
 
 func (c *Catalog) GetInstallGuide(ctx context.Context, req *connect.Request[catalogv1.GetInstallGuideRequest]) (*connect.Response[catalogv1.GetInstallGuideResponse], error) {
@@ -278,6 +272,8 @@ type Registry struct {
 	auditStore audit.AuditStore
 	mu         sync.Mutex
 	publishes  map[string]*publishRecord
+	blobs      catalog.BlobStore
+	publicURL  string
 }
 
 // NewRegistry builds a Registry backed by in-memory stores.
@@ -532,6 +528,9 @@ func (r *Registry) BeginPublish(ctx context.Context, req *connect.Request[regist
 	if _, ok := r.regStore.Get(m.Namespace); !ok {
 		return nil, connect.NewError(connect.CodeNotFound, registry.ErrNotFound)
 	}
+	if err := r.requireRole(ctx, m.Namespace, authz.RolePublisher); err != nil {
+		return nil, err
+	}
 
 	now := time.Now().UTC()
 	id, err := newPublishID()
@@ -559,7 +558,7 @@ func (r *Registry) BeginPublish(ctx context.Context, req *connect.Request[regist
 
 	return connect.NewResponse(&registryv1.BeginPublishResponse{
 		PublishId: id,
-		Uploads:   []*registryv1.UploadTarget{},
+		Uploads:   r.uploadTargets(rec.files),
 		ExpiresAt: timestamppb.New(rec.expiresAt),
 	}), nil
 }
@@ -576,6 +575,9 @@ func (r *Registry) CommitPublish(ctx context.Context, req *connect.Request[regis
 	r.mu.Unlock()
 	if !ok || rec == nil {
 		return nil, connect.NewError(connect.CodeNotFound, registry.ErrNotFound)
+	}
+	if err := r.requireRole(ctx, rec.namespace, authz.RolePublisher); err != nil {
+		return nil, err
 	}
 
 	md := m.ManifestDigest
