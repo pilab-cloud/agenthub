@@ -38,34 +38,31 @@ agenthub help
 agenthub add <asset-ref> [flags]
 ```
 
-**Resolve an asset from a hub and add it to `agenthub.json`.**
+**Add an asset to `agenthub.json`, resolve it into `agenthub.lock.json` and install it into the cache.**
 
 | Argument | Description |
 | --- | --- |
-| `asset-ref` | Asset reference in the form `[namespace/]kind/name[@version]` |
+| `asset-ref` | Asset reference in the form `namespace/kind/name[@constraint]`; no constraint means `*` |
+
+An existing entry for the same asset is replaced. If resolution fails,
+`agenthub.json` is restored (exit code 4).
 
 **Flags:**
 
 | Flag | Description |
 | --- | --- |
-| `--force` | Overwrite existing entry in `agenthub.json` |
-| `--dry-run` | Show what would be added without modifying files |
-| `--format json|yaml` | Output format for the resolved asset |
+| `--no-install` | Record and resolve only; do not install into the cache |
+| `--offline` | Never touch the network (requires an existing lockfile) |
+| `--agent <name>` | Target harness recorded with the asset (e.g. `opencode`) |
+| `--hub <url>` | Hub URL (default: `$AGENTHUB_HUB`, then `https://agenthub.pilab.hu`) |
+| `--cache-dir <path>` | Cache directory |
 
 **Examples:**
 
 ```bash
-# Add a specific version
 agenthub add ncis/agent/gibbs@1.0.0
-
-# Add with a version constraint
-agenthub add ncis/agent/gibbs@^0.1.0
-
-# Add from a different namespace
-agenthub add pilab/pack/pirat-agents@1.0.0
-
-# Dry run
-agenthub add ncis/agent/gibbs@1.0.0 --dry-run
+agenthub add ncis/agent/gibbs@^0.1.0 --agent opencode
+agenthub add pilab/pack/pirat-agents --no-install
 ```
 
 ### `agenthub install`

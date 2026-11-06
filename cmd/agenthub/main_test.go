@@ -1054,3 +1054,84 @@ func newCatalogStub(t *testing.T, st *stubCatalog) string {
 	st.setBaseURL(srv.URL)
 	return srv.URL
 }
+
+func TestRunAddResolvesAndInstalls(t *testing.T) {
+	t.Parallel()
+
+	manifest := []byte(`{"name":"code-reviewer"}`)
+	stub := &stubCatalog{manifest: manifest, resolveResp: &catalogv1.ResolveResponse{Assets: []*catalogv1.ResolvedAsset{{
+		Ref:            &commonv1.AssetRef{Namespace: "pilab", Kind: commonv1.AssetKind_ASSET_KIND_AGENT, Name: "code-reviewer", Version: "1.4.2"},
+		ManifestDigest: &commonv1.Digest{Algorithm: "sha256", Value: cache.Key(manifest)},
+	}}}}
+	hub := newCatalogStub(t, stub)
+	dir := t.TempDir()
+	desiredPath := filepath.Join(dir, lockfile.DesiredFileName)
+	lockPath := filepath.Join(dir, lockfile.LockFileName)
+	cacheDir := t.TempDir()
+
+	var out bytes.Buffer
+	opts := addOptions{
+		Agent:   "opencode",
+		Update:  updateOptions{Hub: hub},
+		Install: installOptions{Hub: hub, CacheDir: cacheDir},
+	}
+	if err := runAdd(context.Background(), &out, desiredPath, lockPath, "pilab/agent/code-reviewer@^1.4", opts); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	for _, want := range []string{
+		"updated pilab/agent/code-reviewer@1.4.2",
+		"added pilab/agent/code-reviewer@^1.4 in " + desiredPath,
+		"fetched manifest pilab/agent/code-reviewer@1.4.2",
+	} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("output missing %q:\n%s", want, out.String())
+		}
+	}
+	desired, err := lockfile.ReadDesired(desiredPath)
+	if err != nil || len(desired.Assets) != 1 || desired.Assets[0].Version != "^1.4" || desired.Assets[0].Agent != "opencode" {
+		t.Fatalf("desired: err=%v assets=%+v", err, desired.Assets)
+	}
+
+	// Re-adding replaces the entry instead of duplicating it; a bare ref means any version.
+	out.Reset()
+	opts.NoInstall = true
+	if err := runAdd(context.Background(), &out, desiredPath, lockPath, "pilab/agents/code-reviewer", opts); err != nil {
+		t.Fatalf("re-add: %v", err)
+	}
+	if !strings.Contains(out.String(), "updated pilab/agent/code-reviewer@* in") || strings.Contains(out.String(), "installing") {
+		t.Fatalf("unexpected output:\n%s", out.String())
+	}
+	desired, _ = lockfile.ReadDesired(desiredPath)
+	if len(desired.Assets) != 1 || desired.Assets[0].Version != "*" {
+		t.Fatalf("desired = %+v", desired.Assets)
+	}
+}
+
+func TestRunAddUnresolvedRestoresDesired(t *testing.T) {
+	t.Parallel()
+
+	stub := &stubCatalog{resolveResp: &catalogv1.ResolveResponse{}}
+	hub := newCatalogStub(t, stub)
+	dir := t.TempDir()
+	desiredPath := filepath.Join(dir, lockfile.DesiredFileName)
+	lockPath := filepath.Join(dir, lockfile.LockFileName)
+
+	var out bytes.Buffer
+	err := runAdd(context.Background(), &out, desiredPath, lockPath, "pilab/agent/ghost",
+		addOptions{Update: updateOptions{Hub: hub}})
+	if err == nil || exitCode(err) != exitResolution {
+		t.Fatalf("err = %v (exit %d), want resolution failure", err, exitCode(err))
+	}
+	if _, statErr := os.Stat(desiredPath); !os.IsNotExist(statErr) {
+		t.Fatalf("desired state should be rolled back, stat err = %v", statErr)
+	}
+}
+
+func TestRunAddBadRef(t *testing.T) {
+	t.Parallel()
+
+	err := runAdd(context.Background(), &bytes.Buffer{}, filepath.Join(t.TempDir(), "a.json"), "l.json", "oops", addOptions{})
+	if err == nil {
+		t.Fatal("expected an error for a malformed ref")
+	}
+}

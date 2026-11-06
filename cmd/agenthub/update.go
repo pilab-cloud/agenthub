@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -248,4 +249,117 @@ func runRemove(out io.Writer, desiredPath, lockPath, arg string) error {
 	}
 	fmt.Fprintf(out, "lockfile updated: assets=%d\n", len(locked.Assets))
 	return nil
+}
+
+// addOptions controls `agenthub add`.
+type addOptions struct {
+	Agent     string // target harness recorded with the asset
+	NoInstall bool   // skip installing into the cache
+	Update    updateOptions
+	Install   installOptions
+}
+
+func newAddCmd() *cobra.Command {
+	var (
+		opts         addOptions
+		hubFlag, cfg string
+	)
+	cmd := &cobra.Command{
+		Use:   "add <asset-ref>",
+		Short: "Add an asset to agenthub.json, resolve it and install it",
+		Long: strings.TrimSpace(`
+Adds namespace/kind/name[@constraint] to agenthub.json (replacing any entry for
+the same asset), resolves it into agenthub.lock.json and installs it into the
+cache. Without a constraint any version is accepted. If resolution fails,
+agenthub.json is left as it was.`),
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			hub := resolveHub(cmd.Context(), hubFlag, cfg)
+			opts.Update.Hub, opts.Install.Hub = hub, hub
+			opts.Install.Offline = opts.Update.Offline
+			return runAdd(cmd.Context(), cmd.OutOrStdout(), lockfile.DesiredFileName, lockfile.LockFileName, args[0], opts)
+		},
+	}
+	f := cmd.Flags()
+	f.BoolVar(&opts.NoInstall, "no-install", false, "record and resolve only; do not install into the cache")
+	f.BoolVar(&opts.Update.Offline, "offline", false, "never touch the network")
+	f.StringVar(&opts.Agent, "agent", "", "target harness/agent (e.g. opencode, claude, copilot)")
+	f.StringVar(&opts.Install.CacheDir, "cache-dir", "", "cache directory (default: $AGENTHUB_CACHE_DIR or the user cache)")
+	f.StringVar(&hubFlag, "hub", "", "hub URL")
+	f.StringVar(&cfg, "config", "", "path to config file")
+	return cmd
+}
+
+// runAdd upserts ref into the desired state, re-resolves, and installs. A failed
+// resolution restores the previous desired state.
+func runAdd(ctx context.Context, out io.Writer, desiredPath, lockPath, refArg string, opts addOptions) error {
+	ref, err := parseAssetRef(refArg)
+	if err != nil {
+		return err
+	}
+	version := ref.GetVersion()
+	if version == "" {
+		version = "*"
+	}
+	entry := lockfile.DesiredAsset{
+		Namespace: ref.GetNamespace(),
+		Kind:      kindString(ref.GetKind()),
+		Name:      ref.GetName(),
+		Version:   version,
+		Agent:     opts.Agent,
+	}
+
+	hadFile, err := fileExists(desiredPath)
+	if err != nil {
+		return err
+	}
+	prev, err := lockfile.ReadDesired(desiredPath)
+	if err != nil {
+		return err
+	}
+	next := prev
+	next.Assets = make([]lockfile.DesiredAsset, 0, len(prev.Assets)+1)
+	replaced := false
+	for _, a := range prev.Assets {
+		if a.Identity() == entry.Identity() {
+			next.Assets = append(next.Assets, entry)
+			replaced = true
+			continue
+		}
+		next.Assets = append(next.Assets, a)
+	}
+	if !replaced {
+		next.Assets = append(next.Assets, entry)
+	}
+	if err := lockfile.WriteDesired(desiredPath, next); err != nil {
+		return err
+	}
+	rollback := func() {
+		if hadFile {
+			_ = lockfile.WriteDesired(desiredPath, prev)
+		} else {
+			_ = os.Remove(desiredPath)
+		}
+	}
+
+	verb := "added"
+	if replaced {
+		verb = "updated"
+	}
+	if opts.Update.Offline {
+		// Offline cannot resolve a new pin, so only a re-add of a pinned asset works.
+		if exists, _ := fileExists(lockPath); !exists {
+			rollback()
+			return fmt.Errorf("add --offline: %w", stateNotFound(lockPath))
+		}
+	}
+	if err := runUpdate(ctx, out, desiredPath, lockPath, opts.Update); err != nil {
+		rollback()
+		return err
+	}
+	fmt.Fprintf(out, "%s %s@%s in %s\n", verb, entry.Identity(), version, desiredPath)
+	if opts.NoInstall {
+		return nil
+	}
+	return runInstall(ctx, out, lockPath, false, opts.Install)
 }

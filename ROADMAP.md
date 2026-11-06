@@ -1042,6 +1042,11 @@ Checks: `gofumpt`, `golangci-lint` (0 issues), `go vet`, `go test -race`, `buf l
 
 Checks: `gofumpt`, `golangci-lint` (0 issues), `go vet`, `go test -race`, `buf lint` all pass.
 
+### Slice 2 — `agenthub add` (done)
+
+- `cmd/agenthub/update.go`: `add` upserts the desired entry, runs `update`, then `install` (unless `--no-install`); a failed resolve restores `agenthub.json`.
+- `cmd/agenthub/main_test.go`: add/replace/rollback/bad-ref coverage.
+
 ### Remaining M5 work (out of scope for this session)
 
 - M5.2: ratings/recommendations (no proto surface yet).
