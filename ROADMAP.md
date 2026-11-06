@@ -1047,6 +1047,12 @@ Checks: `gofumpt`, `golangci-lint` (0 issues), `go vet`, `go test -race`, `buf l
 - `cmd/agenthub/update.go`: `add` upserts the desired entry, runs `update`, then `install` (unless `--no-install`); a failed resolve restores `agenthub.json`.
 - `cmd/agenthub/main_test.go`: add/replace/rollback/bad-ref coverage.
 
+### Slice 3 — `agenthub install` wizard (done)
+
+- `cmd/agenthub/harness.go`: claude/opencode/copilot/cursor/codex writers, drift-aware apply, state file.
+- `cmd/agenthub/wizard.go`: bubbletea wizard (targets, location, confirm).
+- `cmd/agenthub/install_cmd.go`: `-t/-l/-y/--print-config/--refresh/--force`; fetch step runs first.
+
 ### Remaining M5 work (out of scope for this session)
 
 - M5.2: ratings/recommendations (no proto surface yet).

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/spf13/cobra"
 
 	catalogv1 "go.pilab.hu/agenthub/gen/go/agenthub/catalog/v1"
 	catalogv1connect "go.pilab.hu/agenthub/gen/go/agenthub/catalog/v1/catalogv1connect"
@@ -61,32 +60,6 @@ type installOptions struct {
 	Offline     bool         // never touch the network
 	HTTPClient  *http.Client // transport; nil means a client with a default timeout
 	KeyResolver keyResolver  // namespace key source; nil reports signatures only
-}
-
-func newInstallCmd() *cobra.Command {
-	var (
-		frozen, offline        bool
-		hubFlag, cacheDir, cfg string
-	)
-	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install the assets pinned in agenthub.lock.json into the cache",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			opts := installOptions{
-				Hub:      resolveHub(cmd.Context(), hubFlag, cfg),
-				CacheDir: cacheDir,
-				Offline:  offline,
-			}
-			return runInstall(cmd.Context(), cmd.OutOrStdout(), lockfile.LockFileName, frozen, opts)
-		},
-	}
-	cmd.Flags().BoolVar(&frozen, "frozen", false, "fail unless every pinned asset is fully installed")
-	cmd.Flags().BoolVar(&offline, "offline", false, "never touch the network; use the cache only")
-	cmd.Flags().StringVar(&hubFlag, "hub", "", "hub URL")
-	cmd.Flags().StringVar(&cacheDir, "cache-dir", "", "cache directory (default: $AGENTHUB_CACHE_DIR or the user cache)")
-	cmd.Flags().StringVar(&cfg, "config", "", "path to config file")
-	return cmd
 }
 
 // runInstall installs every asset pinned in the lockfile at lockPath into the

@@ -71,25 +71,41 @@ agenthub add pilab/pack/pirat-agents --no-install
 agenthub install [flags]
 ```
 
-**Install assets pinned in `agenthub.lock.json`.**
+**Install assets pinned in `agenthub.lock.json`, then wire them into your agents.**
+
+Assets are fetched into the cache (digests and signatures verified), then written
+into each chosen agent's own files. With a terminal and no `--target`, an
+interactive wizard (bubbletea) asks which agents and where. Files agenthub wrote
+are tracked in `<base>/.agenthub/state.json`; a file you edited since is reported
+as drift and left alone unless `--force`.
+
+| Agent (`--target`) | Local | Global |
+| --- | --- | --- |
+| `claude` | `.claude/` | `~/.claude/` |
+| `opencode` | `.opencode/` | `~/.config/opencode/` |
+| `copilot` | `.github/` | `~/.copilot/` |
+| `cursor` | `.cursor/rules/*.mdc` | not supported |
+| `codex` | `AGENTS.md` section | `~/.codex/AGENTS.md` section |
 
 | Flags | Description |
 | --- | --- |
-| `--target <dir>` | Install into a specific directory (default: `.opencode/`) |
-| `--force` | Overwrite existing files |
-| `--dry-run` | Show what would be installed without modifying files |
+| `-t, --target <ids>` | Comma-separated ids, or `auto` (detected), `all`, `none` |
+| `-l, --location <loc>` | `global` or `local` |
+| `-y, --yes` | Non-interactive; defaults to `--location global --target auto` |
+| `--print-config <id>` | Print the files that would be written for an agent; writes nothing |
+| `--refresh` | Rewrite what earlier installs wrote, for already-configured agents only |
+| `--force` | Overwrite files modified since agenthub wrote them |
+| `--frozen`, `--offline`, `--hub`, `--cache-dir`, `--config` | Fetch-step controls |
+
+Without a terminal and without `--target`, assets are only cached.
 
 **Examples:**
 
 ```bash
-# Install into default location
-agenthub install
-
-# Install into a custom directory
-agenthub install --target ./my-project/.opencode
-
-# Dry run
-agenthub install --dry-run
+agenthub install                          # wizard
+agenthub install -y                       # global, detected agents
+agenthub install -t claude,cursor -l local
+agenthub install --print-config codex
 ```
 
 ### `agenthub remove`
